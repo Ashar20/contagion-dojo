@@ -1490,8 +1490,8 @@
   },
   "contracts": [
     {
-      "address": "0xd7c4f61e87165b4f6f2f32ad319dda42c06bb4eeae46377498eb71ee27850b",
-      "class_hash": "0x52d05ac889282a76d99fdac78411b56e72f7fa0f0b68b45633cac04ffd12c7c",
+      "address": "0x7087d1dc629c6cf5f7a2691a3a2b7389ea07e97a1062658a09e6c6dfe8c4a8e",
+      "class_hash": "0x56e0b8f9dc2fd0f9aa06e70a9a0079e755f07aefdecfab9792e6bcc6577a96b",
       "abi": [
         {
           "type": "impl",
@@ -1576,6 +1576,13 @@
           "items": [
             {
               "type": "function",
+              "name": "spawn",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
               "name": "move",
               "inputs": [
                 {
@@ -1583,6 +1590,13 @@
                   "type": "starter::models::Direction"
                 }
               ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "dig",
+              "inputs": [],
               "outputs": [],
               "state_mutability": "external"
             }
@@ -1707,7 +1721,9 @@
       "tag": "starter-actions",
       "selector": "0x79f65004203fb9bf2af98e46a93634bc5676c8074db49ffa86792189cf2ca",
       "systems": [
+        "spawn",
         "move",
+        "dig",
         "upgrade"
       ]
     }
@@ -1716,15 +1732,33 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x1a83781db1989df58e4e0627fbc8748bb9f90e877b984587171b8a37f2952c2",
-      "tag": "starter-Position",
-      "selector": "0x71b61be44298fa24e8468189567dddc096f16c36b75786980f1ef3d40050229"
+      "class_hash": "0x3991c8c7060c0b450f9158015628bbdc6a3590cc79f2d48172f26479608c580",
+      "tag": "starter-Player",
+      "selector": "0x7166418b2abdd3ea0153b999e70abc06f3b5a88be8216718d97d9803e45480b"
     }
   ],
   "events": [
     {
       "members": [],
-      "class_hash": "0xcc83f998bf27cf3a7a06175865d0b733f3a8733489f5b77a86a428528c4bf0",
+      "class_hash": "0x4896a5ab90bf9eb583145acd26621781af659e5835ced3fae9bfdf6e3d9d6f",
+      "tag": "starter-Dug",
+      "selector": "0x2ddb569ff4d267d3c64bd515da62765e24329d49aa02e96a056e4bd77224df4"
+    },
+    {
+      "members": [],
+      "class_hash": "0x57b1a1582cb1290834625540960b29c4be35a08722c4e52460a9066a2a96460",
+      "tag": "starter-GameOver",
+      "selector": "0x474236cda8adb0a4ea921dddfee7494b628bd5ed7e73ee21ab0cda0e86f1857"
+    },
+    {
+      "members": [],
+      "class_hash": "0x500683a4c8ec002e5080c4852d1c4b805ea759dade1b62de69e882d2fbaef50",
+      "tag": "starter-LevelUp",
+      "selector": "0x2434d6fc866adaab14d021fa74a8d5eaf05985636e6c1999da9703e663f459c"
+    },
+    {
+      "members": [],
+      "class_hash": "0x75593f53fad6da5daf6b88297591a07497d953ca16b91f552f101a92953613",
       "tag": "starter-Moved",
       "selector": "0xb74c8051b07c606f67ff1a71303f54ac61d2e784bf198ae226b1640558ebb0"
     }

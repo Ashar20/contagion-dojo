@@ -43,9 +43,19 @@ const connector = new ControllerConnector({
       [actionsAddress]: {
         methods: [
           {
+            name: "Spawn",
+            entrypoint: "spawn",
+            description: "Start or restart your adventure",
+          },
+          {
             name: "Move",
             entrypoint: "move",
             description: "Move your position on the grid",
+          },
+          {
+            name: "Dig",
+            entrypoint: "dig",
+            description: "Dig the tile you are standing on",
           },
         ],
       },

@@ -43,7 +43,7 @@ done
 if ! curl -s http://localhost:5050 >/dev/null 2>&1; then echo "Error: Katana did not become ready in time."; exit 1; fi
 
 # --- Migrate ---
-run sozo migrate --dev
+run_quiet sozo migrate --dev
 
 # --- Copy manifest to client ---
 MANIFEST="manifest_dev.json"

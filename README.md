@@ -10,7 +10,7 @@ Clone this repo, run one command, and have a local game running in minutes.
 - [Dojo toolchain](https://book.dojoengine.org/getting-started/installation) — `scarb`, `sozo`, `katana`, `torii`
 - [Node.js](https://nodejs.org/) >= 18
 - [pnpm](https://pnpm.io/) >= 9
-- Python 3 (used by `dev.sh` to parse manifest JSON)
+- [jq](https://jqlang.github.io/jq/) (used by `dev.sh` to parse manifest JSON)
 
 Pinned versions live in [`contracts/.tool-versions`](contracts/.tool-versions).
 

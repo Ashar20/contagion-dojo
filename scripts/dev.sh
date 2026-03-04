@@ -50,7 +50,7 @@ MANIFEST="manifest_dev.json"
 if [ ! -f "$MANIFEST" ]; then echo "Error: manifest_dev.json not found after migration."; exit 1; fi
 cp "$MANIFEST" "$CLIENT_DIR/src/dojo/manifest_dev.json"
 
-WORLD_ADDRESS=$(python3 -c "import json; print(json.load(open('$MANIFEST'))['world']['address'])")
+WORLD_ADDRESS=$(jq -r '.world.address' "$MANIFEST")
 
 # --- Start Torii ---
 log "torii --config torii.toml --world ${WORLD_ADDRESS:0:10}..."

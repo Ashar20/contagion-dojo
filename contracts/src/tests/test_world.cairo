@@ -9,7 +9,7 @@ mod tests {
     use starknet::ContractAddress;
 
     use starter::systems::actions::{actions, IActionsDispatcher, IActionsDispatcherTrait};
-    use starter::systems::actions::{has_content, dig_outcome, TILE_GOLD, TILE_BOMB};
+    use starter::systems::actions::{has_content, dig_outcome, Tile};
     use starter::models::{Player, m_Player, Direction};
 
     fn namespace_def() -> NamespaceDef {
@@ -76,7 +76,7 @@ mod tests {
 
     // Find a timestamp that produces the desired dig outcome for a given player/tile/level.
     fn find_timestamp_for(
-        player: ContractAddress, x: u8, y: u8, outcome: u8, level: u32,
+        player: ContractAddress, x: u8, y: u8, outcome: Tile, level: u32,
     ) -> u64 {
         let mut t: u64 = 0;
         while t < 1000 {
@@ -205,7 +205,7 @@ mod tests {
         let (mut world, actions) = setup_spawned();
         let player = caller();
         let (cx, cy) = find_tile(player, 1, true);
-        let gold_ts = find_timestamp_for(player, cx, cy, TILE_GOLD, 1);
+        let gold_ts = find_timestamp_for(player, cx, cy, Tile::Gold, 1);
         starknet::testing::set_block_timestamp(gold_ts);
         world
             .write_model_test(
@@ -220,7 +220,7 @@ mod tests {
         let (mut world, actions) = setup_spawned();
         let player = caller();
         let (cx, cy) = find_tile(player, 1, true);
-        let gold_ts = find_timestamp_for(player, cx, cy, TILE_GOLD, 1);
+        let gold_ts = find_timestamp_for(player, cx, cy, Tile::Gold, 1);
         starknet::testing::set_block_timestamp(gold_ts);
         world
             .write_model_test(
@@ -237,7 +237,7 @@ mod tests {
         let (mut world, actions) = setup_spawned();
         let player = caller();
         let (cx, cy) = find_tile(player, 1, true);
-        let bomb_ts = find_timestamp_for(player, cx, cy, TILE_BOMB, 1);
+        let bomb_ts = find_timestamp_for(player, cx, cy, Tile::Bomb, 1);
         starknet::testing::set_block_timestamp(bomb_ts);
         world
             .write_model_test(
@@ -254,7 +254,7 @@ mod tests {
         let (mut world, actions) = setup_spawned();
         let player = caller();
         let (cx, cy) = find_tile(player, 1, true);
-        let gold_ts = find_timestamp_for(player, cx, cy, TILE_GOLD, 1);
+        let gold_ts = find_timestamp_for(player, cx, cy, Tile::Gold, 1);
         starknet::testing::set_block_timestamp(gold_ts);
         world
             .write_model_test(
@@ -274,7 +274,7 @@ mod tests {
         let (mut world, actions) = setup_spawned();
         let player = caller();
         let (cx, cy) = find_tile(player, 1, true);
-        let gold_ts = find_timestamp_for(player, cx, cy, TILE_GOLD, 1);
+        let gold_ts = find_timestamp_for(player, cx, cy, Tile::Gold, 1);
         starknet::testing::set_block_timestamp(gold_ts);
         world
             .write_model_test(

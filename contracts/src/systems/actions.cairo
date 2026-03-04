@@ -1,8 +1,11 @@
 use starter::models::{Direction, Player};
 
-pub const TILE_EMPTY: u8 = 0;
-pub const TILE_GOLD: u8 = 1;
-pub const TILE_BOMB: u8 = 2;
+#[derive(Copy, Drop, Serde, PartialEq, Introspect)]
+pub enum Tile {
+    Empty,
+    Gold,
+    Bomb,
+}
 
 const GRID_MAX: u8 = 9;
 const START_HEALTH: u8 = 100;
@@ -22,17 +25,16 @@ pub fn has_content(player: starknet::ContractAddress, level: u32, x: u8, y: u8) 
 }
 
 // Layer 2: called at dig time. Uses block timestamp + position for per-tile entropy.
-// Gold chance decreases with level: L1=90%, L2=80%, ... L9+=10%.
+// Gold chance decreases with level: L1=90%, L2=80%, ... L9=10%, L10+=0%.
 pub fn dig_outcome(
     player: starknet::ContractAddress, x: u8, y: u8, timestamp: u64, level: u32,
-) -> u8 {
+) -> Tile {
     let hash = core::poseidon::poseidon_hash_span(
         [player.into(), x.into(), y.into(), timestamp.into()].span(),
     );
+    if level >= 10 { return Tile::Bomb; }
     let b: u256 = hash.into() % 10;
-    let capped: u32 = if level > 9 { 9 } else { level };
-    // Level 1: b < 9 → 90%, Level 2: b < 8 → 80%, ... Level 9: b < 1 → 10%
-    if b < (10 - capped).into() { TILE_GOLD } else { TILE_BOMB }
+    if b < (10 - level).into() { Tile::Gold } else { Tile::Bomb }
 }
 
 fn is_dug(dug: felt252, x: u8, y: u8) -> bool {
@@ -77,8 +79,8 @@ pub trait IActions<T> {
 #[dojo::contract]
 pub mod actions {
     use super::{
-        IActions, Direction, Player, next_position, has_content, dig_outcome, is_dug, set_dug,
-        TILE_GOLD, START_HEALTH, WIN_GOLD, GOLD_REWARD, BOMB_DAMAGE,
+        IActions, Direction, Player, Tile, next_position, has_content, dig_outcome, is_dug, set_dug,
+        START_HEALTH, WIN_GOLD, GOLD_REWARD, BOMB_DAMAGE,
     };
     use starknet::{get_caller_address, get_block_timestamp};
     use dojo::model::ModelStorage;
@@ -102,7 +104,7 @@ pub mod actions {
         pub player: starknet::ContractAddress,
         pub x: u8,
         pub y: u8,
-        pub tile: u8,
+        pub tile: Tile,
         pub gold: u32,
         pub health: u8,
     }
@@ -175,7 +177,7 @@ pub mod actions {
             p.dug = set_dug(p.dug, p.x, p.y);
 
             let t = dig_outcome(player, p.x, p.y, get_block_timestamp(), p.level);
-            if t == TILE_GOLD {
+            if t == Tile::Gold {
                 p.gold += GOLD_REWARD;
                 if p.gold > p.best {
                     p.best = p.gold;

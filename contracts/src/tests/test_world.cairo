@@ -9,7 +9,7 @@ mod tests {
     use starknet::ContractAddress;
 
     use starter::systems::actions::{actions, IActionsDispatcher, IActionsDispatcherTrait};
-    use starter::systems::actions::{has_content, dig_outcome, TILE_GOLD, TILE_MINE};
+    use starter::systems::actions::{has_content, dig_outcome, TILE_GOLD, TILE_BOMB};
     use starter::models::{Player, m_Player, Direction};
 
     fn namespace_def() -> NamespaceDef {
@@ -245,12 +245,12 @@ mod tests {
     }
 
     #[test]
-    fn test_dig_mine() {
+    fn test_dig_bomb() {
         let (mut world, actions) = setup_spawned();
         let player = caller();
         let (cx, cy) = find_content_tile(player, 1);
-        let mine_ts = find_timestamp_for(player, cx, cy, TILE_MINE, 1);
-        starknet::testing::set_block_timestamp(mine_ts);
+        let bomb_ts = find_timestamp_for(player, cx, cy, TILE_BOMB, 1);
+        starknet::testing::set_block_timestamp(bomb_ts);
         world
             .write_model_test(
                 @Player { player, x: cx, y: cy, health: 100, gold: 0, level: 1, dug: 0, best: 0 },

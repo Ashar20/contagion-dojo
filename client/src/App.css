@@ -9,7 +9,7 @@
   --tile-border: #c9b896;
   --tile-bg: #efe6d0;
   --gold-bg: #f5e6b8;
-  --mine-bg: #e8c8c0;
+  --bomb-bg: #e8c8c0;
   --dug-bg: #ddd4c2;
 }
 
@@ -237,11 +237,11 @@ body {
   color: var(--amber);
 }
 
-.tile-mine-dug {
-  background: var(--mine-bg);
+.tile-bomb-dug {
+  background: var(--bomb-bg);
 }
 
-.tile-mine-dug .tile-icon {
+.tile-bomb-dug .tile-icon {
   color: #8b3030;
 }
 

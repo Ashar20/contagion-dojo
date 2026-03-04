@@ -146,8 +146,8 @@ function App() {
   const [pending, setPending] = useState(false);
   const [username, setUsername] = useState<string>();
   const [autoSpawn, setAutoSpawn] = useState(false);
-  const [digResults, setDigResults] = useState<Record<string, "gold" | "mine">>({});
-  const [digAnimation, setDigAnimation] = useState<"gold" | "mine" | null>(null);
+  const [digResults, setDigResults] = useState<Record<string, "gold" | "bomb">>({});
+  const [digAnimation, setDigAnimation] = useState<"gold" | "bomb" | null>(null);
   const [burstKey, setBurstKey] = useState(0);
   const [burstPos, setBurstPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const controller = connectors[0] as ControllerConnector;
@@ -224,7 +224,7 @@ function App() {
     const key = `${preDig.x},${preDig.y}`;
     const dugNow = isDug(player.dug ?? "0x0", preDig.x, preDig.y);
     if (dugNow) {
-      const result = (player.gold ?? 0) > preDig.gold ? "gold" as const : "mine" as const;
+      const result = (player.gold ?? 0) > preDig.gold ? "gold" as const : "bomb" as const;
       setDigResults((prev) => ({ ...prev, [key]: result }));
       setPreDig(null);
       const el = document.getElementById("player-tile");
@@ -253,7 +253,7 @@ function App() {
         <div className="login-card">
           <div className="login-shovel">🪏</div>
           <h1 className="login-title">Treasure Hunt</h1>
-          <p className="login-tagline">Dig for treasure, avoid mines</p>
+          <p className="login-tagline">Dig for treasure, avoid bombs</p>
           <button
             className="btn-login"
             onClick={() => {
@@ -290,7 +290,7 @@ function App() {
           <div className="login-shovel">🪏</div>
           <h1 className="login-title">Treasure Hunt</h1>
           <p className="login-tagline">
-            {pending ? "Preparing your expedition..." : "Dig for treasure, avoid mines"}
+            {pending ? "Preparing your expedition..." : "Dig for treasure, avoid bombs"}
           </p>
           <button className="btn-login" onClick={spawn} disabled={pending}>
             {pending ? "Starting..." : "New Game"}

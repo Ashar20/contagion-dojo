@@ -65,16 +65,14 @@ VITE_RPC_URL=http://localhost:5050
 VITE_TORII_URL=http://localhost:8080
 EOF
 
-# --- Start frontend (unless --no-client) ---
-if [[ "${1:-}" != "--no-client" ]]; then
-  echo ""
-  echo "=== Initializing client environment ==="
-  cd "$CLIENT_DIR"
-  run_quiet pnpm install --frozen-lockfile
-  log "pnpm dev"
-  pnpm dev >/dev/null 2>&1 &
-  CLIENT_PID=$!
-fi
+# --- Start frontend ---
+echo ""
+echo "=== Initializing client environment ==="
+cd "$CLIENT_DIR"
+run_quiet pnpm install --frozen-lockfile
+log "pnpm dev"
+pnpm dev >/dev/null 2>&1 &
+CLIENT_PID=$!
 
 # --- Print summary ---
 echo ""
@@ -82,9 +80,7 @@ echo "=== Dev environment running ==="
 echo ""
 echo "Katana RPC:  http://localhost:5050"
 echo "Torii HTTP:  http://localhost:8080"
-if [ -n "$CLIENT_PID" ]; then
-  echo "Frontend:    https://localhost:5173"
-fi
+echo "Client:      https://localhost:5173"
 echo ""
 echo "Press Ctrl+C to stop."
 

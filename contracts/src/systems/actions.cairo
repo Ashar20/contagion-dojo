@@ -2,13 +2,13 @@ use starter::models::{Direction, Player};
 
 pub const TILE_EMPTY: u8 = 0;
 pub const TILE_GOLD: u8 = 1;
-pub const TILE_MINE: u8 = 2;
+pub const TILE_BOMB: u8 = 2;
 
 const GRID_MAX: u8 = 9;
 const START_HEALTH: u8 = 100;
 const WIN_GOLD: u32 = 100;
 const GOLD_REWARD: u32 = 10;
-const MINE_DAMAGE: u8 = 10;
+const BOMB_DAMAGE: u8 = 10;
 
 // Layer 1: deterministic check for whether a tile has content.
 // hash(player, level, x, y) — 20% has content, 80% empty.
@@ -32,7 +32,7 @@ pub fn dig_outcome(
     let b: u256 = hash.into() % 10;
     let capped: u32 = if level > 9 { 9 } else { level };
     // Level 1: b < 9 → 90%, Level 2: b < 8 → 80%, ... Level 9: b < 1 → 10%
-    if b < (10 - capped).into() { TILE_GOLD } else { TILE_MINE }
+    if b < (10 - capped).into() { TILE_GOLD } else { TILE_BOMB }
 }
 
 fn is_dug(dug: felt252, x: u8, y: u8) -> bool {
@@ -78,7 +78,7 @@ pub trait IActions<T> {
 pub mod actions {
     use super::{
         IActions, Direction, Player, next_position, has_content, dig_outcome, is_dug, set_dug,
-        TILE_GOLD, START_HEALTH, WIN_GOLD, GOLD_REWARD, MINE_DAMAGE,
+        TILE_GOLD, START_HEALTH, WIN_GOLD, GOLD_REWARD, BOMB_DAMAGE,
     };
     use starknet::{get_caller_address, get_block_timestamp};
     use dojo::model::ModelStorage;
@@ -181,7 +181,7 @@ pub mod actions {
                     p.best = p.gold;
                 }
             } else {
-                p.health = if p.health > MINE_DAMAGE { p.health - MINE_DAMAGE } else { 0 };
+                p.health = if p.health > BOMB_DAMAGE { p.health - BOMB_DAMAGE } else { 0 };
             }
 
             world.write_model(@p);

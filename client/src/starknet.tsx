@@ -3,6 +3,7 @@
 // so players don't have to manually sign every transaction.
 
 import type { PropsWithChildren } from "react";
+import type { Connector } from "@starknet-react/core";
 import { Chain } from "@starknet-react/chains";
 import {
   jsonRpcProvider,
@@ -75,13 +76,17 @@ const provider = jsonRpcProvider({
   rpc: () => ({ nodeUrl: RPC_URL }),
 });
 
+type StarknetProviderProps = PropsWithChildren<{
+  connectors?: Connector[];
+}>;
+
 // StarknetConfig provides hooks like useAccount, useConnect. autoConnect resumes the previous session.
-export default function StarknetProvider({ children }: PropsWithChildren) {
+export default function StarknetProvider({ children, connectors: externalConnectors }: StarknetProviderProps) {
   return (
     <StarknetConfig
       chains={[katana]}
       provider={provider}
-      connectors={[connector]}
+      connectors={externalConnectors ?? [connector]}
       explorer={cartridge}
       defaultChainId={katana.id}
       autoConnect

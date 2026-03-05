@@ -5,6 +5,12 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CONTRACTS_DIR="$ROOT_DIR/contracts"
 CLIENT_DIR="$ROOT_DIR/client"
 
+# Parse flags
+TEST_MODE=false
+if [[ "${1:-}" == "--test" ]]; then
+  TEST_MODE=true
+fi
+
 KATANA_PID=""
 TORII_PID=""
 CLIENT_PID=""
@@ -29,7 +35,7 @@ run_quiet() { log "$@"; "$@" >/dev/null 2>&1; }
 cd "$CONTRACTS_DIR"
 
 echo "=== Initializing contracts environment ==="
-run_quiet sozo build
+run_quiet scarb build
 
 # --- Start Katana ---
 run_bg katana --config katana.toml
@@ -60,29 +66,54 @@ sleep 2
 if ! kill -0 "$TORII_PID" 2>/dev/null; then echo "Error: Torii failed to start."; exit 1; fi
 
 # --- Write .env for client ---
-cat > "$CLIENT_DIR/.env" <<EOF
+if $TEST_MODE; then
+  cat > "$CLIENT_DIR/.env" <<EOF
+VITE_RPC_URL=http://localhost:5050
+VITE_TORII_URL=http://localhost:8080
+VITE_E2E_TEST=true
+EOF
+else
+  cat > "$CLIENT_DIR/.env" <<EOF
 VITE_RPC_URL=http://localhost:5050
 VITE_TORII_URL=http://localhost:8080
 EOF
+fi
 
 # --- Start frontend ---
 echo ""
 echo "=== Initializing client environment ==="
 cd "$CLIENT_DIR"
 run_quiet pnpm install --frozen-lockfile
-log "pnpm dev"
-pnpm dev >/dev/null 2>&1 &
-CLIENT_PID=$!
 
-# --- Print summary ---
-echo ""
-echo "=== Dev environment running ==="
-echo ""
-echo "Katana RPC:  http://localhost:5050"
-echo "Torii HTTP:  http://localhost:8080"
-echo "Client:      https://localhost:5173"
-echo ""
-echo "Press Ctrl+C to stop."
+if $TEST_MODE; then
+  log "pnpm dev (e2e mode, HTTP)"
+  VITE_E2E_TEST=true pnpm dev >/dev/null 2>&1 &
+  CLIENT_PID=$!
 
-# --- Wait ---
-wait
+  # Wait for Vite to be ready
+  for i in $(seq 1 30); do
+    if curl -s http://localhost:5173 >/dev/null 2>&1; then break; fi
+    sleep 1
+  done
+  if ! curl -s http://localhost:5173 >/dev/null 2>&1; then echo "Error: Vite dev server did not start."; exit 1; fi
+
+  # Run e2e tests
+  echo ""
+  echo "=== Running e2e tests ==="
+  pnpm e2e
+else
+  log "pnpm dev"
+  pnpm dev >/dev/null 2>&1 &
+  CLIENT_PID=$!
+
+  echo ""
+  echo "=== Dev environment running ==="
+  echo ""
+  echo "Katana RPC:  http://localhost:5050"
+  echo "Torii HTTP:  http://localhost:8080"
+  echo "Client:      https://localhost:5173"
+  echo ""
+  echo "Press Ctrl+C to stop."
+
+  wait
+fi

@@ -9,6 +9,9 @@ client/dist/
 .pnpm-store/
 *.tsbuildinfo
 
+# Playwright
+client/test-results/
+
 # Environment
 .env
 .env.local

@@ -20,7 +20,7 @@ run() {
 
 # --- Contracts ---
 cd "$CONTRACTS_DIR"
-run "contracts: build" "sozo build"
+run "contracts: build" "scarb build"
 run "contracts: test" "snforge test"
 
 # --- Client ---

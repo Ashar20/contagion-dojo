@@ -47,7 +47,7 @@ function TileGrid({
 
       tiles.push(
         <div key={`${col},${row}`} className={tileClass}>
-          {isPlayer && <span className="tile-player-marker">&#9670;</span>}
+          {isPlayer && <span className="tile-player-marker" data-testid="player-marker">&#9670;</span>}
           {!isPlayer && !wasDug && content && (
             <span className="tile-icon">&#10007;</span>
           )}
@@ -75,16 +75,16 @@ function HUD({
 }) {
   return (
     <div className="hud">
-      <span className="hud-stat">
+      <span className="hud-stat" data-testid="hud-level">
         Level <strong>{level}</strong>
       </span>
-      <span className="hud-stat">
+      <span className="hud-stat" data-testid="hud-health">
         Health <strong>{health}</strong>
       </span>
-      <span className="hud-stat">
+      <span className="hud-stat" data-testid="hud-gold">
         Gold <strong>{gold}</strong>
       </span>
-      <span className="hud-stat hud-highscore">
+      <span className="hud-stat hud-highscore" data-testid="hud-best">
         Best <strong>{best}</strong>
       </span>
     </div>
@@ -106,6 +106,7 @@ function CompassRose({
     <div className="compass">
       <button
         className="compass-btn compass-north"
+        data-testid="move-up"
         onClick={() => onMove("Up")}
         disabled={disabled}
       >
@@ -113,6 +114,7 @@ function CompassRose({
       </button>
       <button
         className="compass-btn compass-west"
+        data-testid="move-west"
         onClick={() => onMove("Left")}
         disabled={disabled}
       >
@@ -120,6 +122,7 @@ function CompassRose({
       </button>
       <button
         className="compass-btn compass-dig"
+        data-testid="dig"
         onClick={onDig}
         disabled={disabled || !canDig}
       >
@@ -127,6 +130,7 @@ function CompassRose({
       </button>
       <button
         className="compass-btn compass-east"
+        data-testid="move-east"
         onClick={() => onMove("Right")}
         disabled={disabled}
       >
@@ -134,6 +138,7 @@ function CompassRose({
       </button>
       <button
         className="compass-btn compass-south"
+        data-testid="move-down"
         onClick={() => onMove("Down")}
         disabled={disabled}
       >
@@ -152,12 +157,11 @@ function App() {
   const [username, setUsername] = useState<string>();
   const [autoSpawn, setAutoSpawn] = useState(false);
   const [digHistory, setDigHistory] = useState<Array<"gold" | "bomb">>([]);
-  const controller = connectors[0] as ControllerConnector;
-
   useEffect(() => {
-    if (!address) return;
+    if (!address || import.meta.env.VITE_E2E_TEST === "true") return;
+    const controller = connectors[0] as ControllerConnector;
     controller.username()?.then(setUsername);
-  }, [address, controller]);
+  }, [address, connectors]);
 
   const entityId = useEntityId(address ?? "0");
 
@@ -259,9 +263,10 @@ function App() {
           <p className="login-tagline">Dig for treasure, avoid bombs</p>
           <button
             className="btn-login"
+            data-testid="start-digging"
             onClick={() => {
               setAutoSpawn(true);
-              connect({ connector: controller }); // Opens Controller modal for wallet connection
+              connect({ connector: connectors[0] });
             }}
           >
             Start Digging
@@ -295,7 +300,7 @@ function App() {
           <p className="login-tagline">
             {pending ? "Preparing your expedition..." : "Dig for treasure, avoid bombs"}
           </p>
-          <button className="btn-login" onClick={spawn} disabled={pending}>
+          <button className="btn-login" data-testid="new-game" onClick={spawn} disabled={pending}>
             {pending ? "Starting..." : "New Game"}
           </button>
           <div className="login-ornament">&#9674; &#9674; &#9674;</div>

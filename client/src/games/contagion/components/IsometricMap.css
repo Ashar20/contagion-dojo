@@ -1,0 +1,28 @@
+.isometric-map {
+  position: relative;
+  background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%);
+  overflow: hidden;
+}
+
+.isometric-tile {
+  position: absolute;
+  pointer-events: auto;
+  transition: transform 0.1s ease-out;
+  /* Anchor at bottom-center: walkable footprint is 2:1 diamond at bottom */
+  transform-origin: center bottom;
+}
+
+.isometric-tile:hover {
+  transform: translateY(-2px);
+  z-index: 10000 !important;
+}
+
+.isometric-tile img {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  /* Ensure images maintain aspect ratio and align properly */
+  image-rendering: auto;
+  /* Anchor images at bottom-center */
+  object-position: center bottom;
+}

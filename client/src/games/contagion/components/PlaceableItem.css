@@ -1,0 +1,18 @@
+.placeable-item {
+  position: absolute;
+  pointer-events: auto;
+  transition: transform 0.1s ease-out;
+}
+
+.placeable-item:hover {
+  transform: translateY(-2px) scale(1.05);
+  z-index: 10000 !important;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.placeable-item img {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  display: block;
+}

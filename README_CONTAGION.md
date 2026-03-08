@@ -43,6 +43,8 @@ Contagion adopts the [Embeddable Game Standard](https://docs.provable.games/embe
 
 ## Share via ngrok
 
+**Share the frontend (same machine):**
+
 ```bash
 # Terminal 1
 ./scripts/restart.sh
@@ -52,3 +54,22 @@ cd client && pnpm exec ngrok http 3000
 ```
 
 Share the `https://` URL — friends can play immediately.
+
+**Host the backend via ngrok (e.g. backend on another laptop or cloud):**
+
+1. Start the backend (on the machine that will be tunneled):
+   ```bash
+   cd client && bun run dev:server
+   ```
+2. Expose it with ngrok:
+   ```bash
+   ./scripts/ngrok-backend.sh
+   ```
+3. Copy the ngrok HTTPS URL (e.g. `https://abc123.ngrok-free.app`). The WebSocket URL is the same host with `wss://` (e.g. `wss://abc123.ngrok-free.app`).
+4. On the machine running the frontend, point it at the tunneled backend:
+   ```bash
+   cd client
+   VITE_CONTAGION_WS_URL=wss://abc123.ngrok-free.app pnpm dev
+   ```
+   Replace `abc123.ngrok-free.app` with your ngrok host. Restart the dev server after changing `VITE_CONTAGION_WS_URL`.
+5. Open the frontend (e.g. https://localhost:3000 or your own ngrok URL for the frontend). The game will use the backend behind ngrok.

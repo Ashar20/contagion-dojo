@@ -143,11 +143,20 @@ export interface UseGameSocketReturn {
 
 // ── Hook ─────────────────────────────────────────────────────────────
 
-// Use same-origin /ws in dev (proxied to game server); fallback for production
+// On localhost / dev port connect directly to backend; otherwise use same-origin /ws or env
 function getWsUrl(): string {
   const envUrl = (import.meta as { env?: Record<string, string> }).env?.VITE_CONTAGION_WS_URL;
   if (envUrl) return envUrl;
   if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const port = window.location.port;
+    const isDevOrigin =
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '0.0.0.0' ||
+      host === '' ||
+      port === '3000';
+    if (isDevOrigin) return 'ws://localhost:3001';
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${protocol}//${window.location.host}/ws`;
   }

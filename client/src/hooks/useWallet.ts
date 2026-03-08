@@ -1,9 +1,9 @@
 /**
  * Starknet wallet hook — wraps @starknet-react/core for Contagion.
- * No Stellar. Uses Starknet address as player ID.
+ * Uses Cartridge Controller with Google/Discord auth (no passkeys).
  */
 import { useAccount, useConnect, useDisconnect } from '@starknet-react/core';
-import type { Connector } from '@starknet-react/core';
+import { ControllerConnector } from '@cartridge/connector';
 
 export function useWallet() {
   const { address, isConnected } = useAccount();
@@ -14,9 +14,17 @@ export function useWallet() {
   const walletType = 'starknet' as const;
 
   const connectWallet = async () => {
-    if (connectors[0]) {
-      await connect({ connector: connectors[0] });
-    }
+    const ctrl = connectors[0] as ControllerConnector;
+    if (!ctrl) return;
+
+    // Use direct controller.connect() with signupOptions to force
+    // Google/Discord auth even for existing passkey accounts.
+    await ctrl.connect({
+      signupOptions: ["google", "discord"],
+    });
+
+    // Sync starknet-react state after direct controller connection
+    connect({ connector: ctrl });
   };
 
   return {
@@ -25,7 +33,7 @@ export function useWallet() {
     connectWallet,
     disconnect,
     connectors,
-    getContractSigner: () => null, // No Stellar signer; on-chain proof submission disabled
+    getContractSigner: () => null,
     walletType,
   };
 }

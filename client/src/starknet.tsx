@@ -1,7 +1,3 @@
-// -- Cartridge Controller --
-// Configures the Controller wallet connector with session key policies,
-// so players don't have to manually sign every transaction.
-
 import type { PropsWithChildren } from "react";
 import type { Connector } from "@starknet-react/core";
 import { Chain } from "@starknet-react/chains";
@@ -11,19 +7,20 @@ import {
   cartridge,
 } from "@starknet-react/core";
 import { ControllerConnector } from "@cartridge/connector";
-// Use Katana if running (./scripts/dev.sh), else public Sepolia for wallet-only
-const RPC_URL = import.meta.env.VITE_RPC_URL ?? "http://localhost:5050";
-const KATANA_CHAIN_ID = "0x4b4154414e41"; // "KATANA" hex-encoded
 
-// Custom chain for Katana. For Contagion we only need wallet — game runs over WebSocket.
-const katana: Chain = {
-  id: BigInt(KATANA_CHAIN_ID),
-  name: "Katana",
-  network: "katana",
+const RPC_URL = import.meta.env.VITE_RPC_URL ?? "https://api.cartridge.gg/x/starknet/sepolia";
+const CHAIN_ID = "0x534e5f5345504f4c4941"; // SN_SEPOLIA
+
+const WORLD_ADDRESS = "0x056e42d1a8638411797a6dac30816d7f31949c6f5ba5c502e8e8b269afc8ac61";
+const ACTIONS_ADDRESS = "0x050aa714156b7fc942f0782d50d7323a0fb84fcffa8128a3d84f782c98df8e20";
+
+const sepolia: Chain = {
+  id: BigInt(CHAIN_ID),
+  name: "Sepolia",
+  network: "sepolia",
   testnet: true,
   nativeCurrency: {
-    address:
-      "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+    address: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
     name: "Stark",
     symbol: "STRK",
     decimals: 18,
@@ -37,31 +34,31 @@ const katana: Chain = {
   },
 };
 
-// Contagion runs over WebSocket — no on-chain game actions yet. Empty policies.
 const connector = new ControllerConnector({
   chains: [{ rpcUrl: RPC_URL }],
-  defaultChainId: KATANA_CHAIN_ID,
+  defaultChainId: CHAIN_ID,
   policies: { contracts: {} },
+  signupOptions: ["google", "discord"],
 });
 
 const provider = jsonRpcProvider({
   rpc: () => ({ nodeUrl: RPC_URL }),
 });
 
+export { WORLD_ADDRESS, ACTIONS_ADDRESS, RPC_URL };
+
 type StarknetProviderProps = PropsWithChildren<{
   connectors?: Connector[];
 }>;
 
-// StarknetConfig provides hooks like useAccount, useConnect. autoConnect resumes the previous session.
 export default function StarknetProvider({ children, connectors: externalConnectors }: StarknetProviderProps) {
   return (
     <StarknetConfig
-      chains={[katana]}
+      chains={[sepolia]}
       provider={provider}
       connectors={externalConnectors ?? [connector]}
       explorer={cartridge}
-      defaultChainId={katana.id}
-      autoConnect
+      defaultChainId={sepolia.id}
     >
       {children}
     </StarknetConfig>

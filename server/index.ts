@@ -173,47 +173,143 @@ const MAP_GROWTH_PER_PLAYER = 20;       // +20 tiles per dimension per extra pla
 const COLLECT_RADIUS = 1;               // must be within 1 tile
 const TEST_CAMP_RADIUS = 3;             // must be within 3 tiles of test camp to test
 const TEST_CAMP_COUNT = 3;             // number of test camps per game
-let testCamps: { x: number; y: number }[] = [];
 
 function calculateMapSize(playerCount: number): number {
   return BASE_MAP_SIZE + Math.max(0, playerCount - 2) * MAP_GROWTH_PER_PLAYER;
 }
-let currentMapSize = BASE_MAP_SIZE;
 
-// ── Game State ───────────────────────────────────────────────────────
+// ── Room System ──────────────────────────────────────────────────────
 
-const players = new Map<string, ServerPlayer>();
-const cureFragments: CureFragment[] = [];
-const buriedGems: BuriedGem[] = [];
-let nextBuriedGemId = 1;
-const accusations: Accusation[] = [];
-const proximityCounters = new Map<string, number>(); // "infectedId:healthyId" → tick count
-const deadNames = new Map<string, boolean>(); // name → wasInfected (persists across respawns)
-let tick = 0;
-let gameTimer = GAME_DURATION_TICKS;
-let patientZeroId: string | null = null;
-let gameOver = false;
-let nextAccusationId = 1;
-let nextFragmentId = 1;
+interface GameRoom {
+  code: string;
+  createdAt: number;
+  players: Map<string, ServerPlayer>;
+  cureFragments: CureFragment[];
+  buriedGems: BuriedGem[];
+  nextBuriedGemId: number;
+  accusations: Accusation[];
+  proximityCounters: Map<string, number>;
+  deadNames: Map<string, boolean>;
+  tick: number;
+  gameTimer: number;
+  patientZeroId: string | null;
+  gameOver: boolean;
+  nextAccusationId: number;
+  nextFragmentId: number;
+  enemies: Enemy[];
+  nextEnemyId: number;
+  waveState: WaveState;
+  playerScores: Map<string, number>;
+  playerTestCooldowns: Map<string, number>;
+  testCamps: { x: number; y: number }[];
+  currentMapSize: number;
+  usedNames: Set<string>;
+}
 
-// Wave defense state
-const enemies: Enemy[] = [];
-let nextEnemyId = 1;
-let waveState: WaveState = {
-  waveNumber: 0,
-  active: false,
-  countingDown: false,
-  countdown: 0,
-  mobsRemaining: 0,
-  farmPatches: [],
-  currentTargetPatchIndex: 0,
-  nextWaveTime: 0,
-};
-const playerScores = new Map<string, number>(); // playerId -> score
-const playerTestCooldowns = new Map<string, number>(); // playerId -> tick
+function generateRoomCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
 
-// Track which WebSocket belongs to which player
+function createRoom(code?: string): GameRoom {
+  const roomCode = code || generateRoomCode();
+  return {
+    code: roomCode,
+    createdAt: Date.now(),
+    players: new Map(),
+    cureFragments: [],
+    buriedGems: [],
+    nextBuriedGemId: 1,
+    accusations: [],
+    proximityCounters: new Map(),
+    deadNames: new Map(),
+    tick: 0,
+    gameTimer: GAME_DURATION_TICKS,
+    patientZeroId: null,
+    gameOver: false,
+    nextAccusationId: 1,
+    nextFragmentId: 1,
+    enemies: [],
+    nextEnemyId: 1,
+    waveState: { waveNumber: 0, active: false, countingDown: false, countdown: 0, mobsRemaining: 0, farmPatches: [], currentTargetPatchIndex: 0, nextWaveTime: 0 },
+    playerScores: new Map(),
+    playerTestCooldowns: new Map(),
+    testCamps: [],
+    currentMapSize: BASE_MAP_SIZE,
+    usedNames: new Set(),
+  };
+}
+
+const rooms = new Map<string, GameRoom>();
 const wsToPlayer = new Map<unknown, string>();
+const wsToRoom = new Map<unknown, string>();
+
+function getRoomForWs(ws: unknown): GameRoom | null {
+  const roomCode = wsToRoom.get(ws);
+  return roomCode ? rooms.get(roomCode) ?? null : null;
+}
+
+// Legacy aliases — point to default room for helper functions that still reference them.
+// Each function below has been updated to accept a room parameter.
+let players: Map<string, ServerPlayer>;
+let cureFragments: CureFragment[];
+let buriedGems: BuriedGem[];
+let nextBuriedGemId: number;
+let accusations: Accusation[];
+let proximityCounters: Map<string, number>;
+let deadNames: Map<string, boolean>;
+let tick: number;
+let gameTimer: number;
+let patientZeroId: string | null;
+let gameOver: boolean;
+let nextAccusationId: number;
+let nextFragmentId: number;
+let enemies: Enemy[];
+let nextEnemyId: number;
+let waveState: WaveState;
+let playerScores: Map<string, number>;
+let playerTestCooldowns: Map<string, number>;
+let testCamps: { x: number; y: number }[];
+let currentMapSize: number;
+
+/** Bind all legacy global aliases to a specific room so existing functions work unchanged. */
+function bindRoom(room: GameRoom) {
+  players = room.players;
+  cureFragments = room.cureFragments;
+  buriedGems = room.buriedGems;
+  nextBuriedGemId = room.nextBuriedGemId;
+  accusations = room.accusations;
+  proximityCounters = room.proximityCounters;
+  deadNames = room.deadNames;
+  tick = room.tick;
+  gameTimer = room.gameTimer;
+  patientZeroId = room.patientZeroId;
+  gameOver = room.gameOver;
+  nextAccusationId = room.nextAccusationId;
+  nextFragmentId = room.nextFragmentId;
+  enemies = room.enemies;
+  nextEnemyId = room.nextEnemyId;
+  waveState = room.waveState;
+  playerScores = room.playerScores;
+  playerTestCooldowns = room.playerTestCooldowns;
+  testCamps = room.testCamps;
+  currentMapSize = room.currentMapSize;
+}
+
+/** Sync mutated scalars back from legacy globals into the room object. */
+function syncRoom(room: GameRoom) {
+  room.nextBuriedGemId = nextBuriedGemId;
+  room.tick = tick;
+  room.gameTimer = gameTimer;
+  room.patientZeroId = patientZeroId;
+  room.gameOver = gameOver;
+  room.nextAccusationId = nextAccusationId;
+  room.nextFragmentId = nextFragmentId;
+  room.nextEnemyId = nextEnemyId;
+  room.currentMapSize = currentMapSize;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -227,9 +323,8 @@ function gridDistance(ax: number, ay: number, bx: number, by: number): number {
  * Generate a random player name in Adjective+Animal format.
  * Returns unique combinations by tracking used names.
  */
-const usedNames = new Set<string>();
-
-function generateRandomName(): string {
+function generateRandomName(room?: GameRoom): string {
+  const used = room?.usedNames ?? new Set<string>();
   let name: string;
   let attempts = 0;
 
@@ -238,24 +333,17 @@ function generateRandomName(): string {
     const animal = ANIMALS[randomInt(0, ANIMALS.length - 1)];
     name = `${adjective}${animal}`;
     attempts++;
-
-    // If we've tried 100 times, allow duplicates (very rare with 48*48=2304 combos)
     if (attempts > 100) break;
-  } while (usedNames.has(name));
+  } while (used.has(name));
 
-  usedNames.add(name);
+  used.add(name);
   return name;
 }
 
-/**
- * Remove a name from the used names set (when player disconnects permanently)
- */
-function releasePlayerName(name: string) {
-  usedNames.delete(name);
+function releasePlayerName(name: string, room?: GameRoom) {
+  (room?.usedNames ?? new Set()).delete(name);
 }
 
-// Temporary test - remove after verification
-console.log('[Name Gen Test]', generateRandomName(), generateRandomName(), generateRandomName());
 
 function calculateGemInventory(playerId: string): Record<string, number> {
   const inventory: Record<string, number> = {
@@ -538,9 +626,10 @@ function send(ws: unknown, msg: object) {
   } catch { /* disconnected */ }
 }
 
-function broadcast(msg: object) {
+function broadcast(msg: object, room?: GameRoom) {
   const data = JSON.stringify(msg);
-  for (const p of players.values()) {
+  const targets = room ? room.players : players;
+  for (const p of targets.values()) {
     try {
       (p.ws as { send(data: string): void }).send(data);
     } catch { /* disconnected */ }
@@ -1172,26 +1261,67 @@ function handleMessage(ws: unknown, raw: string) {
   const playerId = wsToPlayer.get(ws);
 
   switch (msg.type) {
+    // ── Room Management ──────────────────────────────────────────
+    case 'create_room': {
+      let code: string;
+      do { code = generateRoomCode(); } while (rooms.has(code));
+      const room = createRoom(code);
+      rooms.set(code, room);
+      console.log(`[Room] Created room ${code} — ${rooms.size} active rooms`);
+      send(ws, { type: 'room_created', code });
+      break;
+    }
+
+    case 'list_rooms': {
+      const list = Array.from(rooms.values()).map(r => ({
+        code: r.code,
+        playerCount: r.players.size,
+        gameStarted: !!r.patientZeroId && !r.gameOver,
+        createdAt: r.createdAt,
+      }));
+      send(ws, { type: 'room_list', rooms: list });
+      break;
+    }
+
     case 'join': {
       const id = msg.address as string;
       const color = (msg.color as string) || '#4CAF50';
+      const roomCode = (msg.roomId as string) || '';
 
-      // Server generates random name instead of using client name
-      const name = generateRandomName();
+      // Resolve or create room
+      let room: GameRoom;
+      if (roomCode && rooms.has(roomCode)) {
+        room = rooms.get(roomCode)!;
+      } else if (roomCode) {
+        send(ws, { type: 'error', message: `Room "${roomCode}" not found` });
+        return;
+      } else {
+        // No roomId — create a default room
+        let defaultRoom = rooms.get('DEFAULT');
+        if (!defaultRoom) {
+          defaultRoom = createRoom('DEFAULT');
+          rooms.set('DEFAULT', defaultRoom);
+        }
+        room = defaultRoom;
+      }
+
+      // Bind legacy globals to this room
+      bindRoom(room);
+
+      const name = generateRandomName(room);
 
       // Reconnect or new player
       const existing = players.get(id);
       if (existing) {
-        // Reconnecting player keeps their current name
         existing.ws = ws;
         existing.color = color;
         wsToPlayer.set(ws, id);
-        console.log(`[Reconnect] ${existing.name} (${id.slice(0, 8)}...)`);
+        wsToRoom.set(ws, room.code);
+        console.log(`[Reconnect] ${existing.name} in room ${room.code}`);
       } else {
-        // Spawn players in a ring around center so they don't start on top of each other
         const center = Math.floor(currentMapSize / 2);
         const angle = Math.random() * Math.PI * 2;
-        const radius = 15 + Math.random() * 10; // 15-25 tiles from center
+        const radius = 15 + Math.random() * 10;
         const spawnX = Math.round(center + Math.cos(angle) * radius);
         const spawnY = Math.round(center + Math.sin(angle) * radius);
         players.set(id, {
@@ -1216,15 +1346,16 @@ function handleMessage(ws: unknown, raw: string) {
           ws,
         });
         wsToPlayer.set(ws, id);
-        console.log(`[Join] ${name} (${id.slice(0, 8)}...) — ${players.size} players`);
+        wsToRoom.set(ws, room.code);
+        console.log(`[Join] ${name} → room ${room.code} (${players.size} players)`);
       }
 
-      // Send current state to joining player
       const gameAlreadyStarted = !!patientZeroId && !gameOver;
       const p = players.get(id);
       send(ws, {
         type: 'welcome',
         playerId: id,
+        roomCode: room.code,
         fragmentsToWin: CURE_FRAGMENTS_TO_WIN,
         gameDuration: Math.ceil(GAME_DURATION_TICKS / 5),
         gameStarted: gameAlreadyStarted,
@@ -1234,12 +1365,9 @@ function handleMessage(ws: unknown, raw: string) {
         isPatientZero: !!(p?.isPatientZero),
       });
 
-      // Expand map if needed
       const newMapSize = calculateMapSize(players.size);
       if (newMapSize > currentMapSize) {
         currentMapSize = newMapSize;
-        console.log(`[Map] Expanded to ${currentMapSize}×${currentMapSize} (${players.size} players)`);
-        // Spawn additional cure fragments in the new area
         const extraFragments = Math.floor((currentMapSize - BASE_MAP_SIZE) / MAP_GROWTH_PER_PLAYER) * 2;
         const currentCount = cureFragments.filter(f => !f.collected).length;
         const target = CURE_FRAGMENT_COUNT + extraFragments;
@@ -1255,30 +1383,30 @@ function handleMessage(ws: unknown, raw: string) {
           occupied.add(`${gx},${gy}`);
           cureFragments.push({ id: nextFragmentId++, gridX: gx, gridY: gy, collected: false });
         }
-        broadcast({ type: 'mapExpanded', mapSize: currentMapSize });
+        broadcast({ type: 'mapExpanded', mapSize: currentMapSize }, room);
       }
 
-      // Start game when 2+ players — first player sees lobby, can share link; game starts when 2nd joins
       if (players.size >= MIN_PLAYERS_TO_START && !patientZeroId && !gameOver) {
         resetGame();
-        broadcast({ type: 'gameStarted' });
+        broadcast({ type: 'gameStarted' }, room);
         broadcastState();
-        // Send infected AFTER gameStarted so client receives it last (avoids overwriting isPatientZero)
-        const pzWs = Array.from(wsToPlayer.entries()).find(([_, id]) => id === patientZeroId)?.[0];
+        const pzWs = Array.from(wsToPlayer.entries()).find(([_, pid]) => pid === patientZeroId)?.[0];
         if (pzWs) send(pzWs, { type: 'infected', message: 'You are patient zero!' });
-        console.log('[Game] Started with', players.size, 'player(s)');
+        console.log(`[Game] Room ${room.code} started with ${players.size} player(s)`);
       } else if (gameAlreadyStarted) {
-        // Game already running — send state immediately so new player sees gems, players, etc.
         broadcastState();
       } else {
-        // Broadcast lobby so player sees they're connected
         broadcastLobby();
       }
+
+      syncRoom(room);
       break;
     }
 
     case 'move': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const p = players.get(playerId);
       if (!p) return;
       p.gridX = msg.gridX as number;
@@ -1288,6 +1416,8 @@ function handleMessage(ws: unknown, raw: string) {
 
     case 'player_damaged': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const p = players.get(playerId);
       if (!p) return;
       const enemyType = (msg.enemyType as string) || 'goblin';
@@ -1307,6 +1437,8 @@ function handleMessage(ws: unknown, raw: string) {
 
     case 'flashProof': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const p = players.get(playerId);
       if (!p) return;
 
@@ -1338,6 +1470,8 @@ function handleMessage(ws: unknown, raw: string) {
 
     case 'accuse': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const accuser = players.get(playerId);
       if (!accuser) return;
 
@@ -1385,6 +1519,8 @@ function handleMessage(ws: unknown, raw: string) {
 
     case 'vote': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const accId = msg.accusationId as number;
       const yes = msg.yes as boolean;
 
@@ -1403,6 +1539,8 @@ function handleMessage(ws: unknown, raw: string) {
 
     case 'collectFragment': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const p = players.get(playerId);
       if (!p || p.infected) {
         send(ws, { type: 'error', message: p?.infected ? 'Infected players cannot collect cure fragments' : 'Cannot collect' });
@@ -1439,6 +1577,8 @@ function handleMessage(ws: unknown, raw: string) {
 
     case 'dig_gem': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const player = players.get(playerId);
       if (!player) return;
 
@@ -1483,6 +1623,8 @@ function handleMessage(ws: unknown, raw: string) {
 
     case 'collect_gem': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const player = players.get(playerId);
       if (!player) return;
 
@@ -1540,6 +1682,8 @@ function handleMessage(ws: unknown, raw: string) {
 
     case 'attack_enemy': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const p = players.get(playerId);
       if (!p) return;
 
@@ -1576,6 +1720,8 @@ function handleMessage(ws: unknown, raw: string) {
 
     case 'test_infection': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const p = players.get(playerId);
       if (!p) return;
 
@@ -1616,6 +1762,8 @@ function handleMessage(ws: unknown, raw: string) {
 
     case 'player_died': {
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const p = players.get(playerId);
       if (!p) return;
 
@@ -1639,8 +1787,9 @@ function handleMessage(ws: unknown, raw: string) {
     }
 
     case 'infect_nearby': {
-      // Infected player holds Q to immediately infect a nearby healthy player
       if (!playerId) return;
+      const room = getRoomForWs(ws);
+      if (room) bindRoom(room);
       const p = players.get(playerId);
       if (!p || !p.infected) return;
 
@@ -1668,28 +1817,42 @@ function handleMessage(ws: unknown, raw: string) {
     }
 
     case 'restart': {
-      if (gameOver) {
-        resetGame();
-        broadcast({ type: 'gameStarted' });
-        console.log('[Game] Restarted!');
+      const room = getRoomForWs(ws);
+      if (room) {
+        bindRoom(room);
+        if (gameOver) {
+          resetGame();
+          broadcast({ type: 'gameStarted' }, room);
+          syncRoom(room);
+          console.log(`[Game] Room ${room.code} restarted!`);
+        }
       }
       break;
     }
   }
+
+  // Sync mutated scalars back to room for any handler that modified them
+  const postRoom = getRoomForWs(ws);
+  if (postRoom) syncRoom(postRoom);
 }
 
 // ── Tick Loop ────────────────────────────────────────────────────────
 
 function gameTick() {
-  if (gameOver || !patientZeroId) return;
+  for (const room of rooms.values()) {
+    bindRoom(room);
+    if (gameOver || !patientZeroId) continue;
 
-  tick++;
+    tick++;
 
-  tickInfection();
-  tickVotes();
+    tickInfection();
+    tickVotes();
 
-  checkWinCondition();
-  broadcastState();
+    checkWinCondition();
+    broadcastState();
+
+    syncRoom(room);
+  }
 }
 
 // ── Bun WebSocket Server ─────────────────────────────────────────────
@@ -1715,11 +1878,14 @@ Bun.serve({
     },
     close(ws) {
       const playerId = wsToPlayer.get(ws);
-      if (playerId) {
-        console.log(`[WS] ${players.get(playerId)?.name ?? playerId} disconnected`);
-        // Don't remove player immediately — allow reconnect
-        wsToPlayer.delete(ws);
+      const roomCode = wsToRoom.get(ws);
+      if (playerId && roomCode) {
+        const room = rooms.get(roomCode);
+        const name = room?.players.get(playerId)?.name ?? playerId;
+        console.log(`[WS] ${name} disconnected from room ${roomCode}`);
       }
+      wsToPlayer.delete(ws);
+      wsToRoom.delete(ws);
     },
   },
 });

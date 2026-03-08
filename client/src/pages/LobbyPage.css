@@ -1,0 +1,166 @@
+.lobby-wrapper {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.lobby-container {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+}
+
+.lobby-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #88e888, #44bb44);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lobby-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+}
+
+.lobby-error {
+  background: rgba(255, 70, 70, 0.15);
+  border: 1px solid rgba(255, 70, 70, 0.4);
+  color: #ff6b6b;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.lobby-create-btn {
+  width: 100%;
+  max-width: 320px;
+}
+
+.lobby-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.lobby-divider::before,
+.lobby-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.lobby-join-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  max-width: 320px;
+}
+
+.lobby-code-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 1.4rem;
+  font-family: 'Press Start 2P', monospace;
+  text-align: center;
+  letter-spacing: 0.3em;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(136, 232, 136, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  outline: none;
+  text-transform: uppercase;
+  transition: border-color 0.2s;
+}
+
+.lobby-code-input:focus {
+  border-color: #88e888;
+}
+
+.lobby-code-input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.3em;
+}
+
+.lobby-rooms {
+  margin-top: 2.5rem;
+}
+
+.lobby-rooms-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 1rem;
+}
+
+.lobby-rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.lobby-room-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+}
+
+.lobby-room-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lobby-room-code {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1rem;
+  color: #88e888;
+  letter-spacing: 0.15em;
+}
+
+.lobby-room-players {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.lobby-room-live {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.15);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  letter-spacing: 0.1em;
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.lobby-room-actions {
+  display: flex;
+  gap: 0.5rem;
+}

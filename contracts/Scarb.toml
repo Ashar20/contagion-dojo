@@ -22,5 +22,7 @@ cairo_test = "2.13.1"
 dojo_snf_test = "1.8.0"
 snforge_std = "0.51.2"
 
+[profile.sepolia]
+
 [[target.starknet-contract]]
 build-external-contracts = ["dojo::world::world_contract::world"]

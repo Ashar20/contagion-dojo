@@ -21,9 +21,11 @@ const IsometricMapCanvasLazy = lazy(() =>
 interface ContagionGameDojoProps {
   /** Starknet address. If omitted, uses address from useWallet. */
   userAddress?: string;
+  /** Room code for multiplayer rooms. */
+  roomCode?: string;
 }
 
-export function ContagionGameDojo({ userAddress = '' }: ContagionGameDojoProps) {
+export function ContagionGameDojo({ userAddress = '', roomCode }: ContagionGameDojoProps) {
   const { publicKey } = useWallet();
   const effectiveAddress = (userAddress || (publicKey ?? '')) as string;
 
@@ -46,7 +48,7 @@ export function ContagionGameDojo({ userAddress = '' }: ContagionGameDojoProps) 
     return `hsl(${hue}, 70%, 45%)`;
   }, [effectiveAddress]);
 
-  const socket = useGameSocket(effectiveAddress, localColor);
+  const socket = useGameSocket(effectiveAddress, localColor, roomCode);
 
   const [localPlayerX, setLocalPlayerX] = useState(() => Math.floor((socket.mapSize || 200) / 2));
   const [localPlayerY, setLocalPlayerY] = useState(() => Math.floor((socket.mapSize || 200) / 2));
@@ -265,6 +267,7 @@ export function ContagionGameDojo({ userAddress = '' }: ContagionGameDojoProps) 
           isPatientZero={socket.isPatientZero}
           myProof={socket.myProof}
           isGeneratingProof={socket.isGeneratingProof}
+          roomCode={roomCode}
           onToggleAccuseMode={() => setAccuseMode(prev => !prev)}
           onVote={socket.vote}
           onRestart={socket.restart}

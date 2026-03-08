@@ -1,0 +1,690 @@
+.landing-wrapper {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden; 
+  color: #e8e8ec;
+}
+
+/* Floating game assets */
+.landing-floating-assets {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.landing-floating-asset {
+  position: absolute;
+  opacity: 0.25;
+  animation: landingFloat 12s ease-in-out infinite;
+}
+
+.landing-floating-asset img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@keyframes landingFloat {
+  0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+  25% { transform: translateY(-12px) translateX(8px) rotate(2deg); }
+  50% { transform: translateY(-6px) translateX(-6px) rotate(-1deg); }
+  75% { transform: translateY(-18px) translateX(4px) rotate(1deg); }
+}
+
+/* Hero */
+.landing-hero {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  padding: 120px 40px 80px;
+  overflow: hidden;
+}
+
+.landing-hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 600px 400px at 50% 40%, rgba(255, 34, 68, 0.12), transparent),
+    radial-gradient(ellipse 800px 600px at 30% 60%, rgba(0, 255, 106, 0.15), transparent),
+    radial-gradient(ellipse 500px 500px at 70% 30%, rgba(255, 204, 0, 0.04), transparent);
+  animation: landingHeroPulse 8s ease-in-out infinite alternate;
+}
+
+@keyframes landingHeroPulse {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.landing-hero-dots {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.landing-hero-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: landingDotFloat 12s infinite;
+}
+
+.landing-hero-dot.healthy {
+  background: #00ff6a;
+  box-shadow: 0 0 8px #00ff6a;
+}
+
+.landing-hero-dot.infected {
+  background: #ff2244;
+  box-shadow: 0 0 8px #ff2244;
+}
+
+@keyframes landingDotFloat {
+  0% { opacity: 0; transform: translateY(0) translateX(0); }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(-200px) translateX(40px); }
+}
+
+.landing-hero-badge {
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #ff2244;
+  background: rgba(255, 34, 68, 0.15);
+  border: 1px solid rgba(255, 34, 68, 0.2);
+  padding: 8px 20px;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 2;
+  animation: landingFadeSlideUp 0.8s ease-out 0.2s both;
+}
+
+.landing-hero-badge::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #ff2244;
+  border-radius: 50%;
+  margin-right: 10px;
+  animation: landingBlink 1.5s infinite;
+}
+
+@keyframes landingBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.landing-hero-title {
+  font-family: "Press Start 2P", monospace;
+  font-size: clamp(48px, 10vw, 120px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -3px;
+  position: relative;
+  z-index: 2;
+  animation: landingFadeSlideUp 0.8s ease-out 0.4s both;
+}
+
+.landing-hero-title .line1 {
+  display: block;
+  background: linear-gradient(135deg, #e8e8ec 0%, #7a7a88 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landing-hero-title .line2 {
+  display: block;
+  background: linear-gradient(135deg, #ff2244 0%, #ffcc00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 0.5em;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  margin-top: 12px;
+}
+
+.landing-hero-sub {
+  font-family: "Press Start 2P", monospace;
+  font-size: 18px;
+  color: #7a7a88;
+  max-width: 560px;
+  margin-top: 32px;
+  line-height: 1.7;
+  position: relative;
+  z-index: 2;
+  animation: landingFadeSlideUp 0.8s ease-out 0.6s both;
+}
+
+.landing-hero-sub strong {
+  color: #00ff6a;
+}
+
+.landing-hero-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 48px;
+  position: relative;
+  z-index: 2;
+  animation: landingFadeSlideUp 0.8s ease-out 0.8s both;
+}
+
+.landing-hero-scroll {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  animation: landingFadeSlideUp 0.8s ease-out 1.2s both;
+}
+
+.landing-hero-scroll span {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #4a4a55;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-hero-scroll span::after {
+  content: "";
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(to bottom, #4a4a55, transparent);
+  animation: landingScrollPulse 2s infinite;
+}
+
+@keyframes landingScrollPulse {
+  0%, 100% { opacity: 0.3; height: 32px; }
+  50% { opacity: 1; height: 48px; }
+}
+
+@keyframes landingFadeSlideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Sections */
+.landing-section {
+  padding: 120px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.landing-section-label {
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #00ff6a;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.landing-section-title {
+  font-family: "Press Start 2P", monospace;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  color: #e8e8ec;
+}
+
+.landing-section-desc {
+  font-family: "Press Start 2P", monospace;
+  font-size: 17px;
+  color: #7a7a88;
+  max-width: 600px;
+  line-height: 1.7;
+  margin-bottom: 64px;
+}
+
+/* How grid */
+.landing-how-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.landing-how-card {
+  padding: 48px 36px;
+  transition: all 0.4s;
+}
+
+.landing-how-card:hover {
+  border-color: rgba(0, 255, 106, 0.6) !important;
+}
+
+.landing-how-card:hover .landing-how-num {
+  color: #00ff6a;
+  text-shadow: 0 0 30px rgba(0, 255, 106, 0.3);
+}
+
+.landing-how-num {
+  font-family: "Press Start 2P", monospace;
+  font-size: 64px;
+  font-weight: 700;
+  color: #222228;
+  line-height: 1;
+  margin-bottom: 24px;
+  transition: all 0.4s;
+}
+
+.landing-how-card h3 {
+  font-family: "Press Start 2P", monospace;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+  color: #e8e8ec;
+}
+
+.landing-how-card p {
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+  color: #7a7a88;
+  line-height: 1.7;
+}
+
+/* Features grid */
+.landing-features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+}
+
+.landing-feature-card {
+  padding: 48px 40px;
+  transition: all 0.4s;
+}
+
+.landing-feature-card:hover {
+  border-color: #4a4a55 !important;
+}
+
+.landing-feature-icon {
+  font-size: 28px;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.landing-feature-card h3 {
+  font-family: "Press Start 2P", monospace;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+  color: #e8e8ec;
+}
+
+.landing-feature-card p {
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+  color: #7a7a88;
+  line-height: 1.7;
+}
+
+.landing-feature-tag {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #00ff6a;
+  background: rgba(0, 255, 106, 0.15);
+  padding: 4px 10px;
+  display: inline-block;
+  margin-top: 16px;
+}
+
+/* ZK section */
+.landing-zk-section { 
+  border-top: 1px solid #222228;
+  border-bottom: 1px solid #222228;
+  max-width: 100%;
+  padding: 120px 40px;
+}
+
+.landing-zk-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.landing-zk-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.landing-zk-visual {
+  position: relative;
+  height: 400px;
+  background: #0a0a0c;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-zk-lock {
+  font-size: 48px;
+  margin-bottom: 20px;
+  display: block;
+  text-align: center;
+  animation: landingLockPulse 3s ease-in-out infinite;
+}
+
+@keyframes landingLockPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.landing-zk-proof-demo {
+  font-family: "Press Start 2P", monospace;
+  font-size: 12px;
+  color: #00ff6a;
+  text-align: left;
+  padding: 20px;
+  background: rgba(0, 255, 106, 0.03);
+  border: 1px solid rgba(0, 255, 106, 0.1);
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.landing-zk-proof-demo .line {
+  margin-bottom: 4px;
+  opacity: 0;
+  animation: landingTypeLine 0.3s ease-out forwards;
+}
+
+.landing-zk-proof-demo .line:nth-child(1) { animation-delay: 0.5s; }
+.landing-zk-proof-demo .line:nth-child(2) { animation-delay: 0.8s; }
+.landing-zk-proof-demo .line:nth-child(3) { animation-delay: 1.1s; }
+.landing-zk-proof-demo .line:nth-child(4) { animation-delay: 1.4s; }
+.landing-zk-proof-demo .line:nth-child(5) { animation-delay: 1.7s; }
+.landing-zk-proof-demo .line:nth-child(6) { animation-delay: 2s; }
+
+@keyframes landingTypeLine {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.landing-zk-proof-demo .dim {
+  color: #4a4a55;
+}
+
+.landing-zk-proof-demo .val {
+  color: #00ff6a;
+}
+
+.landing-zk-proof-demo .warn {
+  color: #ffcc00;
+}
+
+.landing-zk-content h2 {
+  font-family: "Press Start 2P", monospace;
+  font-size: clamp(36px, 4vw, 48px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  color: #e8e8ec;
+}
+
+.landing-zk-content h2 em {
+  font-style: normal;
+  color: #00ff6a;
+}
+
+.landing-zk-content > p {
+  font-family: "Press Start 2P", monospace;
+  font-size: 16px;
+  color: #7a7a88;
+  line-height: 1.7;
+  margin-bottom: 32px;
+}
+
+.landing-zk-points {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.landing-zk-points li {
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+  color: #7a7a88;
+  line-height: 1.6;
+  padding-left: 24px;
+  position: relative;
+}
+
+.landing-zk-points li::before {
+  content: ">";
+  font-family: "Press Start 2P", monospace;
+  color: #00ff6a;
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+.landing-zk-points li strong {
+  color: #e8e8ec;
+}
+
+/* Tagline strip */
+.landing-tagline-strip {
+  background: #111114;
+  border-top: 1px solid #222228;
+  border-bottom: 1px solid #222228;
+  padding: 80px 40px;
+  text-align: center;
+  max-width: 100%;
+}
+
+.landing-tagline-strip blockquote {
+  font-family: "Press Start 2P", monospace;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1.4;
+  max-width: 800px;
+  margin: 0 auto;
+  color: #e8e8ec;
+}
+
+.landing-tagline-strip blockquote em {
+  font-style: normal;
+  color: #ff2244;
+  font-weight: 600;
+}
+
+.landing-tagline-strip cite {
+  display: block;
+  margin-top: 24px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #4a4a55;
+  font-style: normal;
+}
+
+/* Gameplay strip */
+.landing-gameplay-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  margin-top: 64px;
+}
+
+.landing-gp-card {
+  padding: 32px 24px;
+  text-align: center;
+  transition: all 0.4s;
+}
+
+.landing-gp-card:hover {
+  border-color: #00ff6a !important;
+  transform: translateY(-4px);
+}
+
+.landing-gp-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.landing-gp-card h4 {
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+  color: #e8e8ec;
+}
+
+.landing-gp-card p {
+  font-family: "Press Start 2P", monospace;
+  font-size: 12px;
+  color: #7a7a88;
+  line-height: 1.6;
+}
+
+/* Points table */
+.landing-points-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 40px;
+}
+
+.landing-points-table th,
+.landing-points-table td {
+  font-family: "Press Start 2P", monospace;
+  font-size: 13px;
+  padding: 16px 20px;
+  text-align: left;
+  border-bottom: 1px solid #222228;
+}
+
+.landing-points-table th {
+  color: #4a4a55;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.landing-points-table td {
+  color: #7a7a88;
+}
+
+.landing-points-table td:first-child {
+  color: #e8e8ec;
+  font-weight: 500;
+}
+
+.landing-points-table .pts-green {
+  color: #00ff6a;
+}
+
+.landing-points-table .pts-red {
+  color: #ff2244;
+}
+
+.landing-points-table .pts-yellow {
+  color: #ffcc00;
+}
+
+/* CTA section */
+.landing-cta-section {
+  text-align: center;
+  padding: 160px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-cta-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 500px 400px at 50% 50%, rgba(0, 255, 106, 0.15), transparent);
+  pointer-events: none;
+}
+
+.landing-cta-section h2 {
+  font-family: "Press Start 2P", monospace;
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 2;
+  color: #e8e8ec;
+}
+
+.landing-cta-section p {
+  font-family: "Press Start 2P", monospace;
+  font-size: 17px;
+  color: #7a7a88;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+.landing-stellar-badge {
+  margin-top: 2rem;
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  color: #4a4a55;
+  letter-spacing: 0.2em;
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 900px) {
+  .landing-how-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-zk-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .landing-gameplay-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .landing-gameplay-strip .landing-gp-card:last-child {
+    grid-column: span 2;
+  }
+
+  .landing-section {
+    padding: 80px 20px;
+  }
+
+  .landing-zk-section {
+    padding: 80px 20px;
+  }
+}

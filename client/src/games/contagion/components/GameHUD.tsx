@@ -72,6 +72,7 @@ interface GameHUDProps {
   myProof: ZKProofResult | null;
   isGeneratingProof: boolean;
 
+  roomCode?: string;
   onToggleAccuseMode: () => void;
   onVote: (accusationId: number, yes: boolean) => void;
   onRestart: () => void;
@@ -93,6 +94,7 @@ export function GameHUD({
   isPatientZero,
   myProof,
   isGeneratingProof,
+  roomCode,
   onToggleAccuseMode,
   onVote,
   onRestart,
@@ -138,12 +140,28 @@ export function GameHUD({
           style={{
             position: 'absolute', top: '50%', left: '50%',
             transform: 'translate(-50%, -50%)', zIndex: 20,
-            ...pillBase, fontSize: 16,
-            background: 'rgba(0, 0, 0, 0.75)', color: '#fff',
-            padding: '12px 24px',
+            background: 'rgba(0, 0, 0, 0.85)', color: '#fff',
+            padding: '24px 32px', borderRadius: 12, textAlign: 'center',
+            display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center',
           }}
         >
-          Waiting for players to join...
+          <div style={{ ...pillBase, fontSize: 14 }}>Waiting for players to join...</div>
+          {roomCode && (
+            <>
+              <div style={{ ...pillBase, fontSize: 22, color: '#88e888', letterSpacing: '0.2em' }}>
+                {roomCode}
+              </div>
+              <button
+                style={{ ...btnNormal, fontSize: 10, padding: '8px 16px' }}
+                onClick={() => {
+                  const url = `${window.location.origin}${window.location.pathname}#/room/${roomCode}`;
+                  navigator.clipboard.writeText(url);
+                }}
+              >
+                Copy Invite Link
+              </button>
+            </>
+          )}
         </div>
       )}
 

@@ -168,6 +168,7 @@ function getTabSessionId(): string {
 export function useGameSocket(
   address: string,
   color: string,
+  roomCode?: string,
 ): UseGameSocketReturn {
   // Each tab gets a unique player ID so the same wallet can spawn multiple players
   const tabId = useRef(getTabSessionId());
@@ -268,7 +269,7 @@ export function useGameSocket(
         if (disposed) { ws.close(); return; }
         console.log('[WS] Connected');
         setConnected(true);
-        ws.send(JSON.stringify({ type: 'join', address: playerId, color }));
+        ws.send(JSON.stringify({ type: 'join', address: playerId, color, roomId: roomCode || '' }));
       };
 
       ws.onmessage = (event) => {
@@ -690,7 +691,7 @@ export function useGameSocket(
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [address, color]);
+  }, [address, color, roomCode]);
 
   // ── Actions ──────────────────────────────────────────────────────
   // Guard: only send when WebSocket is OPEN to avoid "Still in CONNECTING state" errors

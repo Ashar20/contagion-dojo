@@ -11,12 +11,11 @@ import {
   cartridge,
 } from "@starknet-react/core";
 import { ControllerConnector } from "@cartridge/connector";
-import { RPC_URL } from "./dojo/config";
-import manifest from "./dojo/manifest_dev.json";
-
+// Use Katana if running (./scripts/dev.sh), else public Sepolia for wallet-only
+const RPC_URL = import.meta.env.VITE_RPC_URL ?? "http://localhost:5050";
 const KATANA_CHAIN_ID = "0x4b4154414e41"; // "KATANA" hex-encoded
 
-// Custom chain definition for local Katana devnet. In production, use a chain from @starknet-react/chains.
+// Custom chain for Katana. For Contagion we only need wallet — game runs over WebSocket.
 const katana: Chain = {
   id: BigInt(KATANA_CHAIN_ID),
   name: "Katana",
@@ -38,38 +37,11 @@ const katana: Chain = {
   },
 };
 
-// Look up the deployed contract address from the manifest — policies are per-contract.
-const actionsAddress =
-  manifest.contracts.find((c) => c.tag === "starter-actions")?.address ?? "0x0";
-
+// Contagion runs over WebSocket — no on-chain game actions yet. Empty policies.
 const connector = new ControllerConnector({
   chains: [{ rpcUrl: RPC_URL }],
   defaultChainId: KATANA_CHAIN_ID,
-  // Session key policies: whitelist which methods the Controller can auto-sign.
-  // Without these, the player would have to approve every transaction manually.
-  policies: {
-    contracts: {
-      [actionsAddress]: {
-        methods: [
-          {
-            name: "Spawn",
-            entrypoint: "spawn",
-            description: "Start or restart your adventure",
-          },
-          {
-            name: "Move",
-            entrypoint: "move",
-            description: "Move your position on the grid",
-          },
-          {
-            name: "Dig",
-            entrypoint: "dig",
-            description: "Dig the tile you are standing on",
-          },
-        ],
-      },
-    },
-  },
+  policies: { contracts: {} },
 });
 
 const provider = jsonRpcProvider({

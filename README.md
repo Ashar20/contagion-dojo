@@ -1,6 +1,6 @@
 # Contagion
 
-A social deduction .io game built on Starknet with the Dojo engine. One player is secretly Patient Zero. Infection spreads by proximity. Prove your health with ZK proofs.
+A social deduction .io game built on Starknet with the Dojo engine. One player is secretly Patient Zero. Infection spreads by proximity. Prove your health with flashing proofs. Healthy players mine and perform tasks for points.
 
 ## Quick Start
 

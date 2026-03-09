@@ -1,16 +1,14 @@
 [world]
-name = "Starter"
-seed = "starter"
+name = "Contagion"
+seed = "contagion"
 
 [namespace]
-default = "starter"
+default = "contagion"
 
 [env]
 rpc_url = "http://localhost:5050/"
 account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
 private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 
-# Grants the actions contract permission to write models in the "starter" namespace.
-# Without this, world.write_model would revert.
 [writers]
-"starter" = ["starter-actions"]
+"contagion" = ["contagion-contagion_actions"]

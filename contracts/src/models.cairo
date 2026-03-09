@@ -1,37 +1,35 @@
-// -- Dojo Models --
-// Each #[dojo::model] struct is an ECS component stored on-chain and auto-indexed by Torii.
+// -- Contagion Models --
+// On-chain state for the social deduction infection game.
 
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde, Debug)]
-// Generates read/write traits (ModelStorage) and registers the schema with Torii.
 #[dojo::model]
-pub struct Player {
-    // Primary key — each wallet address maps to exactly one Player entity.
+pub struct ContagionPlayer {
     #[key]
     pub player: ContractAddress,
-    pub x: u8,
-    pub y: u8,
-    pub health: u8,
-    pub gold: u32,
-    pub level: u32,
-    pub dug: felt252, // 100-bit bitmap, bit y*10+x = tile has been dug
-    pub best: u32, // highest gold reached
+    pub room_id: felt252,
+    pub x: u16,
+    pub y: u16,
+    pub is_infected: bool,
+    pub health: u16,
+    pub score: u32,
+    pub cure_fragments: u8,
+    pub is_alive: bool,
 }
 
-// Introspect makes this enum serializable to/from Starknet calldata.
-#[derive(Serde, Copy, Drop, Introspect, PartialEq, Debug)]
-pub enum Direction {
-    Left,
-    Right,
-    Up,
-    Down,
-}
-
-// Transient enum — not stored in ECS, only used within dig logic and emitted in events.
-#[derive(Copy, Drop, Serde, PartialEq, Introspect)]
-pub enum Tile {
-    Empty,
-    Gold,
-    Bomb,
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::model]
+pub struct GameRoom {
+    #[key]
+    pub room_id: felt252,
+    pub host: ContractAddress,
+    pub patient_zero_hash: felt252, // Poseidon hash of patient zero address — hidden until reveal
+    pub player_count: u8,
+    pub max_players: u8,
+    pub started: bool,
+    pub ended: bool,
+    pub infection_radius: u16,
+    pub map_size: u16,
+    pub cure_target: u8, // fragments needed to win
 }

@@ -1,6 +1,3 @@
-// -- Dojo Tests --
-// Uses snforge with a test world. Key patterns: spawn_test_world for setup,
-// start_cheat_* for deterministic control, write_model_test for state injection.
 #[cfg(test)]
 mod tests {
     use dojo::model::{ModelStorage, ModelStorageTest};
@@ -9,304 +6,494 @@ mod tests {
         spawn_test_world, NamespaceDef, TestResource, ContractDefTrait, ContractDef,
         WorldStorageTestTrait,
     };
-    use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address};
+    use snforge_std::{start_cheat_caller_address};
     use starknet::ContractAddress;
 
-    use starter::systems::actions::{IActionsDispatcher, IActionsDispatcherTrait};
-    use starter::systems::actions::{has_content, dig_outcome, Tile};
-    use starter::models::{Player, Direction};
+    use contagion::systems::actions::{
+        IContagionActionsDispatcher, IContagionActionsDispatcherTrait,
+    };
+    use contagion::models::{ContagionPlayer, GameRoom};
 
-    const PLAYER: felt252 = 'PLAYER';
+    const HOST: felt252 = 'HOST';
+    const PLAYER_A: felt252 = 'PLAYER_A';
+    const PLAYER_B: felt252 = 'PLAYER_B';
+    const ROOM_ID: felt252 = 'ROOM_1';
 
-    // Declares which models, events, and contracts exist in the test world — must match the contract.
     fn namespace_def() -> NamespaceDef {
         NamespaceDef {
-            namespace: "starter",
+            namespace: "contagion",
             resources: [
-                TestResource::Model("Player"),
-                TestResource::Event("Moved"),
-                TestResource::Event("Dug"),
-                TestResource::Event("LevelUp"),
-                TestResource::Event("GameOver"),
-                TestResource::Contract("actions"),
+                TestResource::Model("ContagionPlayer"),
+                TestResource::Model("GameRoom"),
+                TestResource::Event("PlayerJoined"),
+                TestResource::Event("PlayerMoved"),
+                TestResource::Event("Infected"),
+                TestResource::Event("Accused"),
+                TestResource::Event("CureCollected"),
+                TestResource::Event("PlayerDied"),
+                TestResource::Contract("contagion_actions"),
             ]
                 .span(),
         }
     }
 
-    // Grants write permission on the "starter" namespace, mirroring dojo_dev.toml's [writers].
     fn contract_defs() -> Span<ContractDef> {
         [
-            ContractDefTrait::new(@"starter", @"actions")
-                .with_writer_of([dojo::utils::bytearray_hash(@"starter")].span()),
+            ContractDefTrait::new(@"contagion", @"contagion_actions")
+                .with_writer_of([dojo::utils::bytearray_hash(@"contagion")].span()),
         ]
             .span()
     }
 
-    fn caller() -> ContractAddress {
-        PLAYER.try_into().unwrap()
+    fn addr(raw: felt252) -> ContractAddress {
+        raw.try_into().unwrap()
     }
 
-    fn make_player(player: ContractAddress, x: u8, y: u8, health: u8, gold: u32) -> @Player {
-        @Player { player, x, y, health, gold, level: 1, dug: 0, best: 0 }
-    }
-
-    // Standard Dojo test setup: create world, sync permissions, resolve contract via DNS, set caller.
-    fn setup() -> (dojo::world::WorldStorage, IActionsDispatcher) {
+    fn setup() -> (dojo::world::WorldStorage, IContagionActionsDispatcher) {
         let ndef = namespace_def();
         let mut world = spawn_test_world([ndef].span());
         world.sync_perms_and_inits(contract_defs());
-        let (contract_address, _) = world.dns(@"actions").unwrap();
-        let actions = IActionsDispatcher { contract_address };
-        start_cheat_caller_address(contract_address, caller());
+        let (contract_address, _) = world.dns(@"contagion_actions").unwrap();
+        let actions = IContagionActionsDispatcher { contract_address };
         (world, actions)
     }
 
-    fn setup_spawned() -> (dojo::world::WorldStorage, IActionsDispatcher) {
+    fn setup_room(
+        world: @dojo::world::WorldStorage, actions: @IContagionActionsDispatcher,
+    ) -> felt252 {
+        let contract_address = *actions.contract_address;
+        start_cheat_caller_address(contract_address, addr(HOST));
+        (*actions).create_room(ROOM_ID, 200, 3, 10, 5);
+        ROOM_ID
+    }
+
+    #[test]
+    fn test_create_room() {
         let (world, actions) = setup();
-        actions.spawn();
-        (world, actions)
-    }
+        let contract_address = actions.contract_address;
+        start_cheat_caller_address(contract_address, addr(HOST));
+        actions.create_room(ROOM_ID, 200, 3, 10, 5);
 
-    // Find a tile with or without content for the given player/level.
-    fn find_tile(player: ContractAddress, level: u32, want_content: bool) -> (u8, u8) {
-        let mut tx: u8 = 0;
-        while tx < 10 {
-            let mut ty: u8 = 0;
-            while ty < 10 {
-                if has_content(player, level, tx, ty) == want_content {
-                    return (tx, ty);
-                }
-                ty += 1;
-            };
-            tx += 1;
-        };
-        panic!("no matching tile found")
-    }
-
-    // Brute-forces a timestamp that produces the desired dig outcome, letting us test both paths.
-    fn find_timestamp_for(
-        player: ContractAddress, x: u8, y: u8, outcome: Tile, level: u32,
-    ) -> u64 {
-        let mut t: u64 = 0;
-        while t < 1000 {
-            if dig_outcome(player, x, y, t, level) == outcome {
-                return t;
-            }
-            t += 1;
-        };
-        panic!("no timestamp found for outcome")
+        let room: GameRoom = world.read_model(ROOM_ID);
+        assert!(room.host == addr(HOST), "host should be set");
+        assert!(room.map_size == 200, "map_size should be 200");
+        assert!(room.infection_radius == 3, "infection_radius should be 3");
+        assert!(room.max_players == 10, "max_players should be 10");
+        assert!(room.cure_target == 5, "cure_target should be 5");
+        assert!(!room.started, "should not be started");
     }
 
     #[test]
-    fn test_spawn() {
+    fn test_join_room() {
         let (world, actions) = setup();
-        actions.spawn();
-        let p: Player = world.read_model(caller());
-        assert!(p.x == 0 && p.y == 0, "should start at origin");
-        assert!(p.health == 100, "should have 100 health");
-        assert!(p.gold == 0, "should have 0 gold");
-        assert!(p.level == 1, "should be level 1");
-        assert!(p.dug == 0, "no tiles dug");
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+
+        let player: ContagionPlayer = world.read_model(addr(PLAYER_A));
+        assert!(player.room_id == room_id, "should be in room");
+        assert!(player.x == 100 && player.y == 100, "position");
+        assert!(player.health == 100, "health");
+        assert!(player.is_alive, "alive");
+        assert!(!player.is_infected, "not infected");
+
+        let room: GameRoom = world.read_model(room_id);
+        assert!(room.player_count == 1, "player_count should be 1");
     }
 
     #[test]
-    fn test_move_costs_health() {
-        let (world, actions) = setup_spawned();
-        actions.move(Direction::Right);
-        let p: Player = world.read_model(caller());
-        assert!(p.x == 1, "x should be 1");
-        assert!(p.y == 0, "y should be 0");
-        assert!(p.health == 99, "health should be 99");
+    #[should_panic(expected: "out of bounds")]
+    fn test_join_room_out_of_bounds() {
+        let (world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 250, 100); // map_size is 200
     }
 
     #[test]
-    fn test_move_clamps_at_boundary() {
-        let (world, actions) = setup_spawned();
-        actions.move(Direction::Left);
-        let p: Player = world.read_model(caller());
-        assert!(p.x == 0, "x should stay 0");
+    fn test_start_game() {
+        let (world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
 
-        actions.move(Direction::Down);
-        let p: Player = world.read_model(caller());
-        assert!(p.y == 0, "y should stay 0");
+        // Two players join
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        // Host starts the game
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        let room: GameRoom = world.read_model(room_id);
+        assert!(room.started, "should be started");
+        assert!(room.patient_zero_hash == 'pz_hash', "hash should be set");
     }
 
     #[test]
-    fn test_move_clamps_at_max() {
-        let (mut world, actions) = setup_spawned();
-        // write_model_test bypasses permissions — test-only way to inject arbitrary state.
+    #[should_panic(expected: "only host can start")]
+    fn test_start_game_not_host() {
+        let (world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        // Non-host tries to start
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.start_game(room_id, 'pz_hash');
+    }
+
+    #[test]
+    #[should_panic(expected: "need at least 2 players")]
+    fn test_start_game_not_enough_players() {
+        let (world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+    }
+
+    #[test]
+    fn test_move_player() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.move_player(room_id, 103, 102);
+
+        let player: ContagionPlayer = world.read_model(addr(PLAYER_A));
+        assert!(player.x == 103 && player.y == 102, "should have moved");
+    }
+
+    #[test]
+    #[should_panic(expected: "move too far")]
+    fn test_move_too_far() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.move_player(room_id, 110, 100); // 10 tiles away, max is 5
+    }
+
+    #[test]
+    #[should_panic(expected: "dead players cannot move")]
+    fn test_move_when_dead() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        // Kill the player
         world
             .write_model_test(
-                make_player(caller(), 9, 9, 100, 0),
+                @ContagionPlayer {
+                    player: addr(PLAYER_A),
+                    room_id,
+                    x: 100,
+                    y: 100,
+                    is_infected: false,
+                    health: 0,
+                    score: 0,
+                    cure_fragments: 0,
+                    is_alive: false,
+                },
             );
-        actions.move(Direction::Right);
-        let p: Player = world.read_model(caller());
-        assert!(p.x == 9, "x should stay 9");
 
-        actions.move(Direction::Up);
-        let p: Player = world.read_model(caller());
-        assert!(p.y == 9, "y should stay 9");
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.move_player(room_id, 101, 100);
     }
 
     #[test]
-    fn test_move_all_directions() {
-        let (mut world, actions) = setup_spawned();
+    fn test_infect_nearby_player() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 102, 101); // within radius 3
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        // Make PLAYER_A infected (patient zero)
         world
             .write_model_test(
-                make_player(caller(), 5, 5, 100, 0),
+                @ContagionPlayer {
+                    player: addr(PLAYER_A),
+                    room_id,
+                    x: 100,
+                    y: 100,
+                    is_infected: true,
+                    health: 100,
+                    score: 0,
+                    cure_fragments: 0,
+                    is_alive: true,
+                },
             );
 
-        actions.move(Direction::Right);
-        let p: Player = world.read_model(caller());
-        assert!(p.x == 6 && p.y == 5, "right");
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.infect(room_id, addr(PLAYER_B));
 
-        actions.move(Direction::Up);
-        let p: Player = world.read_model(caller());
-        assert!(p.x == 6 && p.y == 6, "up");
+        let target: ContagionPlayer = world.read_model(addr(PLAYER_B));
+        assert!(target.is_infected, "target should be infected");
+        assert!(target.health == 90, "target should take infection damage");
 
-        actions.move(Direction::Left);
-        let p: Player = world.read_model(caller());
-        assert!(p.x == 5 && p.y == 6, "left");
-
-        actions.move(Direction::Down);
-        let p: Player = world.read_model(caller());
-        assert!(p.x == 5 && p.y == 5, "down");
+        let attacker: ContagionPlayer = world.read_model(addr(PLAYER_A));
+        assert!(attacker.score == 50, "attacker should get infect score");
     }
 
     #[test]
-    #[should_panic(expected: "game over")]
-    fn test_move_when_dead_panics() {
-        let (mut world, actions) = setup_spawned();
+    #[should_panic(expected: "too far to infect")]
+    fn test_infect_too_far() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 110, 110); // way too far
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        // Make PLAYER_A infected
         world
             .write_model_test(
-                make_player(caller(), 5, 5, 0, 0),
+                @ContagionPlayer {
+                    player: addr(PLAYER_A),
+                    room_id,
+                    x: 100,
+                    y: 100,
+                    is_infected: true,
+                    health: 100,
+                    score: 0,
+                    cure_fragments: 0,
+                    is_alive: true,
+                },
             );
-        actions.move(Direction::Right);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.infect(room_id, addr(PLAYER_B));
     }
 
     #[test]
-    fn test_move_to_zero_health() {
-        let (mut world, actions) = setup_spawned();
-        world
-            .write_model_test(
-                make_player(caller(), 0, 0, 1, 0),
-            );
-        actions.move(Direction::Right);
-        let p: Player = world.read_model(caller());
-        assert!(p.health == 0, "health should be 0");
+    #[should_panic(expected: "only infected players can spread")]
+    fn test_infect_not_infected() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 101, 100);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        // PLAYER_A is NOT infected, tries to infect
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.infect(room_id, addr(PLAYER_B));
     }
 
     #[test]
-    #[should_panic(expected: "nothing here")]
-    fn test_dig_empty_tile_panics() {
-        let (mut world, actions) = setup_spawned();
-        let player = caller();
-        let (ex, ey) = find_tile(player, 1, false);
-        world
-            .write_model_test(
-                make_player(player, ex, ey, 100, 0),
-            );
-        actions.dig();
+    fn test_accuse() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        // Player A accuses Player B
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.accuse(room_id, addr(PLAYER_B));
+        // No panic = success. Event emitted.
     }
 
     #[test]
-    #[should_panic(expected: "already dug")]
-    fn test_dig_twice_panics() {
-        let (mut world, actions) = setup_spawned();
-        let player = caller();
-        let (cx, cy) = find_tile(player, 1, true);
-        let gold_ts = find_timestamp_for(player, cx, cy, Tile::Gold, 1);
-        start_cheat_block_timestamp_global(gold_ts);
-        world
-            .write_model_test(
-                make_player(player, cx, cy, 100, 0),
-            );
-        actions.dig();
-        actions.dig(); // should panic
+    #[should_panic(expected: "cannot accuse yourself")]
+    fn test_accuse_self() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.accuse(room_id, addr(PLAYER_A));
     }
 
     #[test]
-    fn test_dig_gold() {
-        let (mut world, actions) = setup_spawned();
-        let player = caller();
-        let (cx, cy) = find_tile(player, 1, true);
-        let gold_ts = find_timestamp_for(player, cx, cy, Tile::Gold, 1);
-        start_cheat_block_timestamp_global(gold_ts);
-        world
-            .write_model_test(
-                make_player(player, cx, cy, 100, 0),
-            );
-        actions.dig();
-        let p: Player = world.read_model(player);
-        assert!(p.gold == 10, "should gain 10 gold");
-        assert!(p.health == 100, "health unchanged");
+    fn test_collect_cure() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.collect_cure(room_id);
+
+        let player: ContagionPlayer = world.read_model(addr(PLAYER_A));
+        assert!(player.cure_fragments == 1, "should have 1 fragment");
+        assert!(player.score == 100, "should have cure score");
     }
 
     #[test]
-    fn test_dig_bomb() {
-        let (mut world, actions) = setup_spawned();
-        let player = caller();
-        let (cx, cy) = find_tile(player, 1, true);
-        let bomb_ts = find_timestamp_for(player, cx, cy, Tile::Bomb, 1);
-        start_cheat_block_timestamp_global(bomb_ts);
+    #[should_panic(expected: "infected players cannot collect cures")]
+    fn test_collect_cure_while_infected() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        // Make player infected
         world
             .write_model_test(
-                make_player(player, cx, cy, 100, 0),
+                @ContagionPlayer {
+                    player: addr(PLAYER_A),
+                    room_id,
+                    x: 100,
+                    y: 100,
+                    is_infected: true,
+                    health: 100,
+                    score: 0,
+                    cure_fragments: 0,
+                    is_alive: true,
+                },
             );
-        actions.dig();
-        let p: Player = world.read_model(player);
-        assert!(p.gold == 0, "gold unchanged");
-        assert!(p.health == 90, "should lose 10 health");
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.collect_cure(room_id);
     }
 
     #[test]
-    fn test_level_up() {
-        let (mut world, actions) = setup_spawned();
-        let player = caller();
-        let (cx, cy) = find_tile(player, 1, true);
-        let gold_ts = find_timestamp_for(player, cx, cy, Tile::Gold, 1);
-        start_cheat_block_timestamp_global(gold_ts);
+    fn test_collect_cure_win_condition() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        // Give player 4 fragments (cure_target is 5)
         world
             .write_model_test(
-                make_player(player, cx, cy, 50, 90),
+                @ContagionPlayer {
+                    player: addr(PLAYER_A),
+                    room_id,
+                    x: 100,
+                    y: 100,
+                    is_infected: false,
+                    health: 100,
+                    score: 400,
+                    cure_fragments: 4,
+                    is_alive: true,
+                },
             );
-        actions.dig();
-        let p: Player = world.read_model(player);
-        assert!(p.level == 2, "should be level 2");
-        assert!(p.gold == 100, "gold should be preserved");
-        assert!(p.health == 100, "health should reset to 100");
-        assert!(p.x == 0 && p.y == 0, "position should reset");
-        assert!(p.dug == 0, "dug should reset");
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.collect_cure(room_id);
+
+        let player: ContagionPlayer = world.read_model(addr(PLAYER_A));
+        assert!(player.cure_fragments == 5, "should have 5 fragments");
+        assert!(player.score == 400 + 100 + 500, "should have cure + win bonus");
     }
 
     #[test]
-    fn test_level_up_gold_accumulates() {
-        let (mut world, actions) = setup_spawned();
-        let player = caller();
-        let (cx, cy) = find_tile(player, 1, true);
-        let gold_ts = find_timestamp_for(player, cx, cy, Tile::Gold, 1);
-        start_cheat_block_timestamp_global(gold_ts);
-        world
-            .write_model_test(
-                make_player(player, cx, cy, 50, 95),
-            );
-        actions.dig();
-        let p: Player = world.read_model(player);
-        assert!(p.level == 2, "should be level 2");
-        assert!(p.gold == 105, "gold should accumulate");
+    fn test_take_damage() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.take_damage(room_id, 25);
+
+        let player: ContagionPlayer = world.read_model(addr(PLAYER_A));
+        assert!(player.health == 75, "health should be 75");
+        assert!(player.is_alive, "should still be alive");
     }
 
     #[test]
-    fn test_spawn_resets_after_game_over() {
-        let (mut world, actions) = setup_spawned();
-        world
-            .write_model_test(
-                @Player { player: caller(), x: 5, y: 5, health: 0, gold: 50, level: 3, dug: 7, best: 250 },
-            );
-        actions.spawn();
-        let p: Player = world.read_model(caller());
-        assert!(p.health == 100 && p.gold == 0 && p.level == 1, "should fully reset");
-        assert!(p.best == 250, "best should be preserved");
+    fn test_take_lethal_damage() {
+        let (mut world, actions) = setup();
+        let room_id = setup_room(@world, @actions);
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.join_room(room_id, 100, 100);
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_B));
+        actions.join_room(room_id, 50, 50);
+
+        start_cheat_caller_address(actions.contract_address, addr(HOST));
+        actions.start_game(room_id, 'pz_hash');
+
+        start_cheat_caller_address(actions.contract_address, addr(PLAYER_A));
+        actions.take_damage(room_id, 200); // more than health
+
+        let player: ContagionPlayer = world.read_model(addr(PLAYER_A));
+        assert!(player.health == 0, "health should be 0");
+        assert!(!player.is_alive, "should be dead");
     }
 }

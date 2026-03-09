@@ -1,41 +1,160 @@
-// -- System Call Wrappers --
-// Each function maps to a #[dojo::contract] entry point in actions.cairo.
+// -- Contagion System Call Wrappers --
+// Each function maps to a #[dojo::contract] entry point in contagion_actions.cairo.
 
 import type { DojoProvider } from "@dojoengine/core";
-import type { Account, AccountInterface, CairoCustomEnum } from "starknet";
+import type { Account, AccountInterface } from "starknet";
 
 export function setupWorld(provider: DojoProvider) {
-  const spawn = async (account: Account | AccountInterface) => {
-    // provider.execute submits a tx to the Dojo world, routing to the contract by name.
-    return await provider.execute(
-      account,
-      { contractName: "actions", entrypoint: "spawn", calldata: [] },
-      "starter",
-      { tip: 0 }
-    );
-  };
-
-  const move = async (
+  const createRoom = async (
     account: Account | AccountInterface,
-    direction: CairoCustomEnum // Serializes a Cairo enum to calldata; variant name must match exactly
+    roomId: bigint,
+    mapSize: number,
+    infectionRadius: number,
+    maxPlayers: number,
+    cureTarget: number
   ) => {
     return await provider.execute(
       account,
-      { contractName: "actions", entrypoint: "move", calldata: [direction] },
-      "starter",
+      {
+        contractName: "contagion_actions",
+        entrypoint: "create_room",
+        calldata: [roomId, mapSize, infectionRadius, maxPlayers, cureTarget],
+      },
+      "contagion",
       { tip: 0 }
     );
   };
 
-  const dig = async (account: Account | AccountInterface) => {
+  const joinRoom = async (
+    account: Account | AccountInterface,
+    roomId: bigint,
+    x: number,
+    y: number
+  ) => {
     return await provider.execute(
       account,
-      { contractName: "actions", entrypoint: "dig", calldata: [] },
-      "starter",
+      {
+        contractName: "contagion_actions",
+        entrypoint: "join_room",
+        calldata: [roomId, x, y],
+      },
+      "contagion",
       { tip: 0 }
     );
   };
 
-  // Shape must match what DojoSdkProvider's clientFn expects; accessed via useDojoSDK().client.
-  return { actions: { spawn, move, dig } };
+  const startGame = async (
+    account: Account | AccountInterface,
+    roomId: bigint,
+    patientZeroHash: bigint
+  ) => {
+    return await provider.execute(
+      account,
+      {
+        contractName: "contagion_actions",
+        entrypoint: "start_game",
+        calldata: [roomId, patientZeroHash],
+      },
+      "contagion",
+      { tip: 0 }
+    );
+  };
+
+  const movePlayer = async (
+    account: Account | AccountInterface,
+    roomId: bigint,
+    newX: number,
+    newY: number
+  ) => {
+    return await provider.execute(
+      account,
+      {
+        contractName: "contagion_actions",
+        entrypoint: "move_player",
+        calldata: [roomId, newX, newY],
+      },
+      "contagion",
+      { tip: 0 }
+    );
+  };
+
+  const infect = async (
+    account: Account | AccountInterface,
+    roomId: bigint,
+    target: string
+  ) => {
+    return await provider.execute(
+      account,
+      {
+        contractName: "contagion_actions",
+        entrypoint: "infect",
+        calldata: [roomId, target],
+      },
+      "contagion",
+      { tip: 0 }
+    );
+  };
+
+  const accuse = async (
+    account: Account | AccountInterface,
+    roomId: bigint,
+    target: string
+  ) => {
+    return await provider.execute(
+      account,
+      {
+        contractName: "contagion_actions",
+        entrypoint: "accuse",
+        calldata: [roomId, target],
+      },
+      "contagion",
+      { tip: 0 }
+    );
+  };
+
+  const collectCure = async (
+    account: Account | AccountInterface,
+    roomId: bigint
+  ) => {
+    return await provider.execute(
+      account,
+      {
+        contractName: "contagion_actions",
+        entrypoint: "collect_cure",
+        calldata: [roomId],
+      },
+      "contagion",
+      { tip: 0 }
+    );
+  };
+
+  const takeDamage = async (
+    account: Account | AccountInterface,
+    roomId: bigint,
+    amount: number
+  ) => {
+    return await provider.execute(
+      account,
+      {
+        contractName: "contagion_actions",
+        entrypoint: "take_damage",
+        calldata: [roomId, amount],
+      },
+      "contagion",
+      { tip: 0 }
+    );
+  };
+
+  return {
+    contagion: {
+      createRoom,
+      joinRoom,
+      startGame,
+      movePlayer,
+      infect,
+      accuse,
+      collectCure,
+      takeDamage,
+    },
+  };
 }

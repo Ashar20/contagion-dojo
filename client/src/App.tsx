@@ -8,10 +8,6 @@ import { Layout } from './components/Layout';
 import { LandingPage } from './pages/LandingPage';
 import { LobbyPage } from './pages/LobbyPage';
 import { useWallet } from './hooks/useWallet';
-// Dojo client–contract bridge: config and contracts are used by useDojoActions in ContagionGameDojo
-import './dojo/config';
-import './dojo/contracts';
-
 const ContagionGameDojo = lazy(() =>
   import('./games/contagion/ContagionGameDojo').then((m) => ({ default: m.ContagionGameDojo }))
 );

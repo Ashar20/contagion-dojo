@@ -63,18 +63,19 @@ export function ContagionGameDojo({ userAddress = '', roomCode }: ContagionGameD
   const [localPlayerX, setLocalPlayerX] = useState(() => Math.floor((socket.mapSize || 200) / 2));
   const [localPlayerY, setLocalPlayerY] = useState(() => Math.floor((socket.mapSize || 200) / 2));
   const lastSyncedGridRef = useRef<{ x: number; y: number } | null>(null);
-  const dojoSpawnedRef = useRef(false);
+  const dojoJoinedRef = useRef(false);
+  const effectiveRoomCode = roomCode || 'default';
 
   useEffect(() => {
     if (socket.gameStarted) {
       warmupZKBackend().catch(() => { /* non-critical */ });
-      // Spawn on-chain player when game starts
-      if (dojo.ready && !dojoSpawnedRef.current) {
-        dojoSpawnedRef.current = true;
-        dojo.spawn();
+      // Register player on-chain when game starts
+      if (dojo.ready && !dojoJoinedRef.current) {
+        dojoJoinedRef.current = true;
+        dojo.joinRoom(effectiveRoomCode, localPlayerX, localPlayerY);
       }
     }
-  }, [socket.gameStarted, dojo.ready, dojo.spawn]);
+  }, [socket.gameStarted, dojo.ready, dojo.joinRoom, effectiveRoomCode, localPlayerX, localPlayerY]);
 
   // Reset EGS report flag when game is no longer over (e.g. after restart)
   useEffect(() => {
@@ -350,18 +351,23 @@ export function ContagionGameDojo({ userAddress = '', roomCode }: ContagionGameD
               localPlayerColor={localColor}
               localPlayerInfected={socket.myStatus === 'infected'}
               isPatientZero={socket.isPatientZero}
-              onInfectNearby={() => socket.infectNearby()}
+              onInfectNearby={() => {
+                socket.infectNearby();
+                // Mirror infection to on-chain contract (proximity-validated)
+                const nearby = socket.players.find(
+                  p => p.id !== socket.playerId &&
+                    Math.abs(p.gridX - localPlayerX) <= 3 &&
+                    Math.abs(p.gridY - localPlayerY) <= 3
+                );
+                if (nearby) {
+                  dojo.infect(effectiveRoomCode, nearby.id);
+                }
+              }}
               onPositionChange={(gridX, gridY) => {
                 socket.sendMove(gridX, gridY);
                 if (gridX !== localPlayerX || gridY !== localPlayerY) {
-                  // Mirror movement to Dojo on-chain contract (mapped to cardinal direction)
-                  const dx = gridX - localPlayerX;
-                  const dy = gridY - localPlayerY;
-                  if (Math.abs(dx) >= Math.abs(dy)) {
-                    dojo.move(dx > 0 ? 'Right' : 'Left');
-                  } else {
-                    dojo.move(dy > 0 ? 'Down' : 'Up');
-                  }
+                  // Mirror movement to Dojo on-chain contract (validated: bounds, distance, alive)
+                  dojo.movePlayer(effectiveRoomCode, gridX, gridY);
                   setLocalPlayerX(gridX);
                   setLocalPlayerY(gridY);
                 }
@@ -371,15 +377,13 @@ export function ContagionGameDojo({ userAddress = '', roomCode }: ContagionGameD
               deathTrigger={socket.deathTrigger}
               buriedGems={socket.buriedGems}
               dugGems={socket.dugGems}
-              onDigGem={(gemId, gridX, gridY) => {
-                socket.digGem(gemId, gridX, gridY);
-                // Mirror dig action to Dojo on-chain contract
-                dojo.dig();
-              }}
+              onDigGem={(gemId, gridX, gridY) => socket.digGem(gemId, gridX, gridY)}
               onCollectGem={(gemId, gridX, gridY) => socket.collectGem(gemId, gridX, gridY)}
               onTaskEvent={(ev) => {
                 if (ev.type === 'damage_taken' && ev.enemyType) {
                   socket.reportDamage(ev.enemyType);
+                  // Record damage on-chain (kills player if health reaches 0)
+                  dojo.takeDamage(effectiveRoomCode, 10);
                 }
               }}
               onKeyAction={(key, gridX, gridY) => {
@@ -397,6 +401,8 @@ export function ContagionGameDojo({ userAddress = '', roomCode }: ContagionGameD
                   );
                   if (nearbyFragment) {
                     socket.collectFragment(nearbyFragment.gridX, nearbyFragment.gridY);
+                    // Record cure collection on-chain (only healthy players can collect)
+                    dojo.collectCure(effectiveRoomCode);
                   }
                 }
               }}
@@ -407,6 +413,8 @@ export function ContagionGameDojo({ userAddress = '', roomCode }: ContagionGameD
                 if (accuseMode) {
                   if (clickedPlayer) {
                     socket.accuse(clickedPlayer.id);
+                    // Record accusation on-chain (validates both alive, same room, no self-accuse)
+                    dojo.accuse(effectiveRoomCode, clickedPlayer.id);
                     setAccuseMode(false);
                   }
                 } else if (clickedPlayer) {
@@ -536,12 +544,14 @@ export function ContagionGameDojo({ userAddress = '', roomCode }: ContagionGameD
 
       {dojo.playerState && (
         <div className="absolute bottom-4 right-4 z-20 bg-black/80 border border-cyan-500/50 rounded-lg px-3 py-2 font-mono text-xs text-white backdrop-blur-sm">
-          <div className="text-cyan-400 font-bold mb-1">ON-CHAIN</div>
+          <div className="text-cyan-400 font-bold mb-1">ON-CHAIN STATE</div>
           <div className="flex gap-3">
-            <span>Lvl {dojo.playerState.level}</span>
-            <span className="text-amber-400">Gold {dojo.playerState.gold}</span>
             <span className="text-red-400">HP {dojo.playerState.health}</span>
-            <span className="text-purple-400">Best {dojo.playerState.best}</span>
+            <span className="text-amber-400">Score {dojo.playerState.score}</span>
+            <span className="text-green-400">Cures {dojo.playerState.cureFragments}</span>
+            <span className={dojo.playerState.isInfected ? 'text-red-500' : 'text-green-500'}>
+              {dojo.playerState.isInfected ? 'INFECTED' : 'HEALTHY'}
+            </span>
           </div>
         </div>
       )}

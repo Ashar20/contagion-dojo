@@ -1,6 +1,6 @@
 [package]
 cairo-version = "2.13.1"
-name = "starter"
+name = "contagion"
 version = "0.1.0"
 edition = "2024_07"
 

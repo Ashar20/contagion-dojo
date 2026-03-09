@@ -1,9 +1,9 @@
 {
   "world": {
     "class_hash": "0x613551abceb2b37073b1149bb862ea70cf029981ce1ca47e9dd7c7ab97cb65d",
-    "address": "0x5c5b3711389959182be13c0f3f3214ad0e98365645230cccca9b580436de324",
-    "seed": "starter",
-    "name": "Starter",
+    "address": "0x7d4ed8b03fba33979c1cebd8c4e8fafffdcc8a8ae40874b21082358158f58e8",
+    "seed": "contagion",
+    "name": "Contagion",
     "entrypoints": [
       "uuid",
       "set_metadata",
@@ -33,15 +33,20 @@
   },
   "contracts": [
     {
-      "address": "0x215bdd70d2fb0f91fbce04a363a4f6406bdb8cc00336cb5dbb903cd6eca83d5",
-      "class_hash": "0x30c575187988c751f35b3b6f3879d0128a05c10368bf11f8d8050ace7b53723",
+      "address": "0x4d30ab23d312ef66ede7285181e39c0964fe52225427048f3d6cc5e9db86d6",
+      "class_hash": "0x481d59a3653ece436216a64bebe6734725409a896b0c23b256e5abb2e987020",
       "init_calldata": [],
-      "tag": "starter-actions",
-      "selector": "0x79f65004203fb9bf2af98e46a93634bc5676c8074db49ffa86792189cf2ca",
+      "tag": "contagion-contagion_actions",
+      "selector": "0x7f64e28c9c0099da60b4e09ca9ad053ef1e2021576e5967b496af56161b36a1",
       "systems": [
-        "spawn",
-        "move",
-        "dig",
+        "create_room",
+        "join_room",
+        "start_game",
+        "move_player",
+        "infect",
+        "accuse",
+        "collect_cure",
+        "take_damage",
         "upgrade"
       ]
     }
@@ -56,83 +61,218 @@
           "key": true
         },
         {
-          "name": "x",
-          "type": "core::integer::u8",
-          "key": false
-        },
-        {
-          "name": "y",
-          "type": "core::integer::u8",
-          "key": false
-        },
-        {
-          "name": "health",
-          "type": "core::integer::u8",
-          "key": false
-        },
-        {
-          "name": "gold",
-          "type": "core::integer::u32",
-          "key": false
-        },
-        {
-          "name": "level",
-          "type": "core::integer::u32",
-          "key": false
-        },
-        {
-          "name": "dug",
+          "name": "room_id",
           "type": "core::felt252",
           "key": false
         },
         {
-          "name": "best",
+          "name": "x",
+          "type": "core::integer::u16",
+          "key": false
+        },
+        {
+          "name": "y",
+          "type": "core::integer::u16",
+          "key": false
+        },
+        {
+          "name": "is_infected",
+          "type": "core::bool",
+          "key": false
+        },
+        {
+          "name": "health",
+          "type": "core::integer::u16",
+          "key": false
+        },
+        {
+          "name": "score",
           "type": "core::integer::u32",
+          "key": false
+        },
+        {
+          "name": "cure_fragments",
+          "type": "core::integer::u8",
+          "key": false
+        },
+        {
+          "name": "is_alive",
+          "type": "core::bool",
           "key": false
         }
       ],
-      "class_hash": "0x784d95541bfe81d8a9374f247d16f14fc7912792dcc01e5a3cfd8d5bc27f0b7",
-      "tag": "starter-Player",
-      "selector": "0x7166418b2abdd3ea0153b999e70abc06f3b5a88be8216718d97d9803e45480b"
+      "class_hash": "0x1adf3382efbdea39ba76fddebba958cd652ab1d1dce05d52ff2b5eee00b5cca",
+      "tag": "contagion-ContagionPlayer",
+      "selector": "0x5dc237cae1387649c1a71e360cd7fe1a6b39f99f546a6de9119e0726dd7943f"
+    },
+    {
+      "members": [
+        {
+          "name": "room_id",
+          "type": "core::felt252",
+          "key": true
+        },
+        {
+          "name": "host",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "key": false
+        },
+        {
+          "name": "patient_zero_hash",
+          "type": "core::felt252",
+          "key": false
+        },
+        {
+          "name": "player_count",
+          "type": "core::integer::u8",
+          "key": false
+        },
+        {
+          "name": "max_players",
+          "type": "core::integer::u8",
+          "key": false
+        },
+        {
+          "name": "started",
+          "type": "core::bool",
+          "key": false
+        },
+        {
+          "name": "ended",
+          "type": "core::bool",
+          "key": false
+        },
+        {
+          "name": "infection_radius",
+          "type": "core::integer::u16",
+          "key": false
+        },
+        {
+          "name": "map_size",
+          "type": "core::integer::u16",
+          "key": false
+        },
+        {
+          "name": "cure_target",
+          "type": "core::integer::u8",
+          "key": false
+        }
+      ],
+      "class_hash": "0x73c4d7e90c284d2b54376d372aabd3e61fba9aa83324c092ffb7ab6ea03c9a9",
+      "tag": "contagion-GameRoom",
+      "selector": "0x7cec9bcee467ec469de14b36269fa1d6e261cad380cd36eda1b90ac45e4f99c"
     }
   ],
   "events": [
     {
       "members": [
         {
+          "name": "accuser",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "key": true
+        },
+        {
+          "name": "target",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "key": false
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252",
+          "key": false
+        }
+      ],
+      "class_hash": "0x71dfa10ba98685e27d37f920f1799f89c77cdb4ba698a4a80303a6cf6a8d688",
+      "tag": "contagion-Accused",
+      "selector": "0x6086a34812da81b4a9218030fee5e5ea165156d2a888a7cd7ade1bd5868ce05"
+    },
+    {
+      "members": [
+        {
           "name": "player",
           "type": "core::starknet::contract_address::ContractAddress",
           "key": true
         },
         {
-          "name": "x",
+          "name": "room_id",
+          "type": "core::felt252",
+          "key": false
+        },
+        {
+          "name": "total_fragments",
           "type": "core::integer::u8",
+          "key": false
+        }
+      ],
+      "class_hash": "0x7feebec70bf0d3819b479ab810d186044efcd5136d9be3da0f3523f681e260",
+      "tag": "contagion-CureCollected",
+      "selector": "0x468f3ac5665b4bb2727686e7b912fa319b0ea7a456b14ecf7937a38d6e8a1bd"
+    },
+    {
+      "members": [
+        {
+          "name": "target",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "key": true
+        },
+        {
+          "name": "source",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "key": false
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252",
+          "key": false
+        }
+      ],
+      "class_hash": "0x59f785deec10b24aedf3f0b840b0709a0396b3944a2d3d574537a88cf8bb055",
+      "tag": "contagion-Infected",
+      "selector": "0x43893d673c9f0707b91fd4fd3e84744b80da6d025a6bacd26a09583a2af0085"
+    },
+    {
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "key": true
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252",
+          "key": false
+        }
+      ],
+      "class_hash": "0x41345f32cccdb696cb2a4929f44d05234c736d8b223aae739ba65ca92f42fdc",
+      "tag": "contagion-PlayerDied",
+      "selector": "0x1f47cfe977286b3397ae6a77e5ddabd5458199a933c1139e153ad9ee2097be8"
+    },
+    {
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "key": true
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252",
+          "key": false
+        },
+        {
+          "name": "x",
+          "type": "core::integer::u16",
           "key": false
         },
         {
           "name": "y",
-          "type": "core::integer::u8",
-          "key": false
-        },
-        {
-          "name": "tile",
-          "type": "starter::models::Tile",
-          "key": false
-        },
-        {
-          "name": "gold",
-          "type": "core::integer::u32",
-          "key": false
-        },
-        {
-          "name": "health",
-          "type": "core::integer::u8",
+          "type": "core::integer::u16",
           "key": false
         }
       ],
-      "class_hash": "0x3bda2d48b15d2a5093a28a2d7884688d579800bb7becb0d30fa44fb15386b92",
-      "tag": "starter-Dug",
-      "selector": "0x2ddb569ff4d267d3c64bd515da62765e24329d49aa02e96a056e4bd77224df4"
+      "class_hash": "0x64381b2e14684ce154d80c8c1fdb6940364c01c042c33d65fe74177b013dac3",
+      "tag": "contagion-PlayerJoined",
+      "selector": "0x3f75a0c5ff33c5e618222aaa15fcffb98202e8bd8bff65747be80c3275e8ded"
     },
     {
       "members": [
@@ -142,68 +282,24 @@
           "key": true
         },
         {
-          "name": "level",
-          "type": "core::integer::u32",
-          "key": false
-        }
-      ],
-      "class_hash": "0x2f4e9cd02053160f36c5cfc435ecce00ed0be78b2510dd0f948730340e70113",
-      "tag": "starter-GameOver",
-      "selector": "0x474236cda8adb0a4ea921dddfee7494b628bd5ed7e73ee21ab0cda0e86f1857"
-    },
-    {
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "key": true
-        },
-        {
-          "name": "level",
-          "type": "core::integer::u32",
-          "key": false
-        },
-        {
-          "name": "gold",
-          "type": "core::integer::u32",
-          "key": false
-        }
-      ],
-      "class_hash": "0x900677281a2964dcb3d3817165ba4da6f57d448378a59fe5ee66c98168b13f",
-      "tag": "starter-LevelUp",
-      "selector": "0x2434d6fc866adaab14d021fa74a8d5eaf05985636e6c1999da9703e663f459c"
-    },
-    {
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "key": true
-        },
-        {
-          "name": "direction",
-          "type": "starter::models::Direction",
+          "name": "room_id",
+          "type": "core::felt252",
           "key": false
         },
         {
           "name": "x",
-          "type": "core::integer::u8",
+          "type": "core::integer::u16",
           "key": false
         },
         {
           "name": "y",
-          "type": "core::integer::u8",
-          "key": false
-        },
-        {
-          "name": "health",
-          "type": "core::integer::u8",
+          "type": "core::integer::u16",
           "key": false
         }
       ],
-      "class_hash": "0x3069cdfbc68009297391df1b66a92cba74cb01e5b5499a94e28dab6bd930b7d",
-      "tag": "starter-Moved",
-      "selector": "0xb74c8051b07c606f67ff1a71303f54ac61d2e784bf198ae226b1640558ebb0"
+      "class_hash": "0x75db7b202aad5608b9ae20d2317dccf980f2631fcaf0291d63880dad451fc49",
+      "tag": "contagion-PlayerMoved",
+      "selector": "0x30c653468cdad71d509427b41486f2e5d38ffae91a739dd53360cd23dac9cfe"
     }
   ],
   "external_contracts": [],
@@ -212,6 +308,589 @@
       "type": "constructor",
       "name": "constructor",
       "inputs": []
+    },
+    {
+      "type": "struct",
+      "name": "contagion::models::ContagionPlayer",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "x",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "y",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "is_infected",
+          "type": "core::bool"
+        },
+        {
+          "name": "health",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "score",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "cure_fragments",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "is_alive",
+          "type": "core::bool"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::models::ContagionPlayerValue",
+      "members": [
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "x",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "y",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "is_infected",
+          "type": "core::bool"
+        },
+        {
+          "name": "health",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "score",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "cure_fragments",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "is_alive",
+          "type": "core::bool"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::models::GameRoom",
+      "members": [
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "host",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "patient_zero_hash",
+          "type": "core::felt252"
+        },
+        {
+          "name": "player_count",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "max_players",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "started",
+          "type": "core::bool"
+        },
+        {
+          "name": "ended",
+          "type": "core::bool"
+        },
+        {
+          "name": "infection_radius",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "map_size",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "cure_target",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::models::GameRoomValue",
+      "members": [
+        {
+          "name": "host",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "patient_zero_hash",
+          "type": "core::felt252"
+        },
+        {
+          "name": "player_count",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "max_players",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "started",
+          "type": "core::bool"
+        },
+        {
+          "name": "ended",
+          "type": "core::bool"
+        },
+        {
+          "name": "infection_radius",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "map_size",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "cure_target",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "contagion::models::m_ContagionPlayer::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "contagion::models::m_GameRoom::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "interface",
+      "name": "contagion::systems::actions::IContagionActions",
+      "items": [
+        {
+          "type": "function",
+          "name": "create_room",
+          "inputs": [
+            {
+              "name": "room_id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "map_size",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "infection_radius",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "max_players",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "cure_target",
+              "type": "core::integer::u8"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "join_room",
+          "inputs": [
+            {
+              "name": "room_id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "x",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "y",
+              "type": "core::integer::u16"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "start_game",
+          "inputs": [
+            {
+              "name": "room_id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "patient_zero_hash",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "move_player",
+          "inputs": [
+            {
+              "name": "room_id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "new_x",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "new_y",
+              "type": "core::integer::u16"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "infect",
+          "inputs": [
+            {
+              "name": "room_id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "target",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "accuse",
+          "inputs": [
+            {
+              "name": "room_id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "target",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "collect_cure",
+          "inputs": [
+            {
+              "name": "room_id",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "take_damage",
+          "inputs": [
+            {
+              "name": "room_id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "amount",
+              "type": "core::integer::u16"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::Accused",
+      "members": [
+        {
+          "name": "accuser",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "target",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::AccusedValue",
+      "members": [
+        {
+          "name": "target",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::CureCollected",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "total_fragments",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::CureCollectedValue",
+      "members": [
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "total_fragments",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "contagion::systems::actions::contagion_actions::Event",
+      "kind": "enum",
+      "variants": [
+        {
+          "name": "UpgradeableEvent",
+          "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+          "kind": "nested"
+        },
+        {
+          "name": "WorldProviderEvent",
+          "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "nested"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::Infected",
+      "members": [
+        {
+          "name": "target",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "source",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::InfectedValue",
+      "members": [
+        {
+          "name": "source",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::PlayerDied",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::PlayerDiedValue",
+      "members": [
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::PlayerJoined",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "x",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "y",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::PlayerJoinedValue",
+      "members": [
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "x",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "y",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::PlayerMoved",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "x",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "y",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "contagion::systems::actions::contagion_actions::PlayerMovedValue",
+      "members": [
+        {
+          "name": "room_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "x",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "y",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "contagion::systems::actions::contagion_actions::e_Accused::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "contagion::systems::actions::contagion_actions::e_CureCollected::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "contagion::systems::actions::contagion_actions::e_Infected::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "contagion::systems::actions::contagion_actions::e_PlayerDied::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "contagion::systems::actions::contagion_actions::e_PlayerJoined::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "contagion::systems::actions::contagion_actions::e_PlayerMoved::Event",
+      "kind": "enum",
+      "variants": []
     },
     {
       "type": "struct",
@@ -2029,7 +2708,7 @@
       "inputs": [
         {
           "name": "event",
-          "type": "starter::systems::actions::actions::Moved"
+          "type": "contagion::systems::actions::contagion_actions::PlayerMoved"
         }
       ],
       "outputs": [],
@@ -2048,362 +2727,11 @@
       "inputs": [
         {
           "name": "value",
-          "type": "starter::systems::actions::actions::MovedValue"
+          "type": "contagion::systems::actions::contagion_actions::PlayerMovedValue"
         }
       ],
       "outputs": [],
       "state_mutability": "view"
-    },
-    {
-      "type": "enum",
-      "name": "starter::models::Direction",
-      "variants": [
-        {
-          "name": "Left",
-          "type": "()"
-        },
-        {
-          "name": "Right",
-          "type": "()"
-        },
-        {
-          "name": "Up",
-          "type": "()"
-        },
-        {
-          "name": "Down",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "starter::models::Player",
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "x",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "y",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "health",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "gold",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "level",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "dug",
-          "type": "core::felt252"
-        },
-        {
-          "name": "best",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "starter::models::PlayerValue",
-      "members": [
-        {
-          "name": "x",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "y",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "health",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "gold",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "level",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "dug",
-          "type": "core::felt252"
-        },
-        {
-          "name": "best",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "starter::models::Tile",
-      "variants": [
-        {
-          "name": "Empty",
-          "type": "()"
-        },
-        {
-          "name": "Gold",
-          "type": "()"
-        },
-        {
-          "name": "Bomb",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "name": "starter::models::m_Player::Event",
-      "kind": "enum",
-      "variants": []
-    },
-    {
-      "type": "interface",
-      "name": "starter::systems::actions::IActions",
-      "items": [
-        {
-          "type": "function",
-          "name": "spawn",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "move",
-          "inputs": [
-            {
-              "name": "direction",
-              "type": "starter::models::Direction"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "dig",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "starter::systems::actions::actions::Dug",
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "x",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "y",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "tile",
-          "type": "starter::models::Tile"
-        },
-        {
-          "name": "gold",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "health",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "starter::systems::actions::actions::DugValue",
-      "members": [
-        {
-          "name": "x",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "y",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "tile",
-          "type": "starter::models::Tile"
-        },
-        {
-          "name": "gold",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "health",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "name": "starter::systems::actions::actions::Event",
-      "kind": "enum",
-      "variants": [
-        {
-          "name": "UpgradeableEvent",
-          "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-          "kind": "nested"
-        },
-        {
-          "name": "WorldProviderEvent",
-          "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-          "kind": "nested"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "starter::systems::actions::actions::GameOver",
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "level",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "starter::systems::actions::actions::GameOverValue",
-      "members": [
-        {
-          "name": "level",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "starter::systems::actions::actions::LevelUp",
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "level",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "gold",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "starter::systems::actions::actions::LevelUpValue",
-      "members": [
-        {
-          "name": "level",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "gold",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "starter::systems::actions::actions::Moved",
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "direction",
-          "type": "starter::models::Direction"
-        },
-        {
-          "name": "x",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "y",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "health",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "starter::systems::actions::actions::MovedValue",
-      "members": [
-        {
-          "name": "direction",
-          "type": "starter::models::Direction"
-        },
-        {
-          "name": "x",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "y",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "health",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "name": "starter::systems::actions::actions::e_Dug::Event",
-      "kind": "enum",
-      "variants": []
-    },
-    {
-      "type": "event",
-      "name": "starter::systems::actions::actions::e_GameOver::Event",
-      "kind": "enum",
-      "variants": []
-    },
-    {
-      "type": "event",
-      "name": "starter::systems::actions::actions::e_LevelUp::Event",
-      "kind": "enum",
-      "variants": []
-    },
-    {
-      "type": "event",
-      "name": "starter::systems::actions::actions::e_Moved::Event",
-      "kind": "enum",
-      "variants": []
     }
   ]
 }

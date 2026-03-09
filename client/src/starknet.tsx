@@ -11,8 +11,8 @@ import { ControllerConnector } from "@cartridge/connector";
 const RPC_URL = import.meta.env.VITE_RPC_URL ?? "https://api.cartridge.gg/x/starknet/sepolia";
 const CHAIN_ID = "0x534e5f5345504f4c4941"; // SN_SEPOLIA
 
-const WORLD_ADDRESS = "0x056e42d1a8638411797a6dac30816d7f31949c6f5ba5c502e8e8b269afc8ac61";
-const ACTIONS_ADDRESS = "0x050aa714156b7fc942f0782d50d7323a0fb84fcffa8128a3d84f782c98df8e20";
+const WORLD_ADDRESS = "0x07d4ed8b03fba33979c1cebd8c4e8fafffdcc8a8ae40874b21082358158f58e8";
+const ACTIONS_ADDRESS = "0x004d30ab23d312ef66ede7285181e39c0964fe52225427048f3d6cc5e9db86d6";
 const EGS_CONTRACT_ADDRESS = "0x00afdc03274b847d6a006272632464b66fe6ac217879e3c3fdec53578e5145a0";
 
 const sepolia: Chain = {
@@ -45,9 +45,14 @@ const connector = new ControllerConnector({
       },
       [ACTIONS_ADDRESS]: {
         methods: [
-          { name: "spawn", entrypoint: "spawn" },
-          { name: "move", entrypoint: "move" },
-          { name: "dig", entrypoint: "dig" },
+          { name: "create_room", entrypoint: "create_room" },
+          { name: "join_room", entrypoint: "join_room" },
+          { name: "start_game", entrypoint: "start_game" },
+          { name: "move_player", entrypoint: "move_player" },
+          { name: "infect", entrypoint: "infect" },
+          { name: "accuse", entrypoint: "accuse" },
+          { name: "collect_cure", entrypoint: "collect_cure" },
+          { name: "take_damage", entrypoint: "take_damage" },
         ],
       },
     },

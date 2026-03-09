@@ -1,9 +1,9 @@
 [world]
-name = "Starter"
-seed = "starter"
+name = "Contagion"
+seed = "contagion"
 
 [namespace]
-default = "starter"
+default = "contagion"
 
 [env]
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
@@ -11,4 +11,4 @@ account_address = "0x069c57ba0814d68fd488621927bd297d317cb0fc2ab91107cc5409812fa
 private_key = "0x0058fbbb54ad6282deb91ce8b6a6142eea3b62352926e97ad99e5e4897b3068f"
 
 [writers]
-"starter" = ["starter-actions"]
+"contagion" = ["contagion-contagion_actions"]
